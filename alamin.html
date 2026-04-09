@@ -3,13 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AL AMIN GROUP - SHG PRO v6.0</title>
+    <title>AL AMIN GROUP - SHG PRO (Firebase Cloud)</title>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
+        /* Your existing CSS - keep as is */
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
         :root { --primary: #2c3e50; --secondary: #34495e; --success: #27ae60; --danger: #e74c3c; --warning: #f39c12; --info: #3498db; --light: #ecf0f1; --dark: #2c3e50; --bg: #f5f7fa; }
         body { background: var(--bg); color: var(--dark); padding-bottom: 30px; }
@@ -99,6 +105,13 @@
         .notification.warning { background: var(--warning); }
         @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
         
+        /* Sync Status Indicator */
+        .sync-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-left: 10px; }
+        .sync-status.online { background: #27ae60; box-shadow: 0 0 5px #27ae60; }
+        .sync-status.offline { background: #e74c3c; box-shadow: 0 0 5px #e74c3c; }
+        .sync-status.syncing { background: #f39c12; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        
         @media (max-width: 768px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .button-grid { grid-template-columns: repeat(2, 1fr); }
@@ -109,9 +122,27 @@
 <body onload="initSystem()">
 
 <!-- ==================== BLOCK-001: HEADER ==================== -->
-<div class="header"><h1 id="d-comp">AL AMIN GROUP</h1><p id="d-addr">Bahrain</p></div>
+<div class="header">
+    <h1 id="d-comp">AL AMIN GROUP</h1>
+    <p id="d-addr">Bahrain <span class="sync-status" id="syncStatus"></span> <span id="syncText" style="font-size:10px; margin-left:5px;"></span></p>
+</div>
 
-<!-- ==================== BLOCK-002: LOGIN PANEL ==================== -->
+<!-- ==================== BLOCK-002: FIREBASE CONFIG MODAL ==================== -->
+<div id="firebaseConfigModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h3>🔥 Firebase Configuration</h3><button class="close-modal-btn" onclick="closeModal('firebaseConfigModal')">&times;</button></div>
+        <div class="form-group"><label>Firebase Project ID</label><input type="text" id="fbProjectId" placeholder="your-project-id"></div>
+        <div class="form-group"><label>API Key</label><input type="text" id="fbApiKey" placeholder="AIzaSy..."></div>
+        <div class="form-group"><label>Auth Domain</label><input type="text" id="fbAuthDomain" placeholder="your-project.firebaseapp.com"></div>
+        <div class="form-group"><label>Database URL</label><input type="text" id="fbDatabaseURL" placeholder="https://your-project.firebaseio.com"></div>
+        <div class="form-group"><label>Storage Bucket</label><input type="text" id="fbStorageBucket" placeholder="your-project.appspot.com"></div>
+        <div class="form-group"><label>App ID</label><input type="text" id="fbAppId" placeholder="1:xxx:web:xxx"></div>
+        <div class="info-text" style="margin-bottom:15px;">📌 Get these from Firebase Console → Project Settings → General</div>
+        <div class="action-btn-row"><button class="btn-cancel" onclick="closeModal('firebaseConfigModal')">CANCEL</button><button class="btn-save" onclick="saveFirebaseConfig()">CONNECT</button></div>
+    </div>
+</div>
+
+<!-- ==================== BLOCK-003: LOGIN PANEL ==================== -->
 <div id="loginPanel" class="login-panel">
     <div class="login-container">
         <h3>🔐 AL AMIN GROUP</h3>
@@ -140,10 +171,11 @@
             ⭐ Leader: Ahmed Hassan / PIN: 5678<br>
             👑 Admin: admin / admin123 | 💻 IT: it / it123
         </div>
+        <button class="login-btn" onclick="showFirebaseConfig()" style="background:#ff9800; margin-top:10px;">🔥 Configure Firebase</button>
     </div>
 </div>
 
-<!-- ==================== BLOCK-003: DASHBOARD CONTAINER ==================== -->
+<!-- ==================== BLOCK-004: DASHBOARD CONTAINER ==================== -->
 <div id="dashboardContainer" style="display:none;">
     <div class="dashboard-container">
         <div class="welcome-card">
@@ -172,7 +204,7 @@
     </div>
 </div>
 
-<!-- ==================== BLOCK-004: MODALS ==================== -->
+<!-- ==================== BLOCK-005: MODALS ==================== -->
 <div id="profileModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>👤 My Profile</h3><button class="close-modal-btn" onclick="closeModal('profileModal')">&times;</button></div><div id="profileContent"></div><div class="action-btn-row"><button class="btn-cancel" onclick="closeModal('profileModal')">CLOSE</button></div></div></div>
 <div id="changePasswordModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>🔑 Change Password</h3><button class="close-modal-btn" onclick="closeModal('changePasswordModal')">&times;</button></div><div class="form-group"><label>Current Password</label><input type="password" id="currentPassword"></div><div class="form-group"><label>New Password</label><input type="password" id="newPassword"></div><div class="form-group"><label>Confirm Password</label><input type="password" id="confirmPassword"></div><div class="action-btn-row"><button class="btn-cancel" onclick="closeModal('changePasswordModal')">CANCEL</button><button class="btn-save" onclick="updatePassword()">UPDATE</button></div></div></div>
 <div id="paymentModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>💳 Make Payment</h3><button class="close-modal-btn" onclick="closeModal('paymentModal')">&times;</button></div><div class="form-group"><label>Select Account</label><select id="paymentAccount"></select></div><div class="form-group"><label>Payment Type</label><select id="paymentType" onchange="updatePaymentAmount()"><option value="reg">📝 Registration Fee</option><option value="dep">💰 Monthly Deposit</option><option value="adv_dep">⭐ Advance Deposit</option><option value="wd_part">💸 Withdrawal (Partial)</option><option value="wd_full">🏦 Withdrawal (Full)</option><option value="proc">⚙️ Loan Processing Fee</option><option value="emi">📅 EMI Payment</option><option value="adv_emi">🚀 Advance EMI</option><option value="loan_full">✅ Full Loan Settlement</option><option value="don">❤️ Donation</option><option value="other">🔧 Other</option></select></div><div class="form-group"><label>Amount</label><input type="number" id="paymentAmount" step="0.001" value="5.000"></div><div class="form-group"><label>Next Due Month</label><input type="text" id="nextDueMonth" readonly style="background:#f5f5f5;"></div><div class="form-group"><label>Reference</label><input type="text" id="paymentRef" placeholder="Optional reference"></div><div class="action-btn-row"><button class="btn-cancel" onclick="closeModal('paymentModal')">CANCEL</button><button class="btn-save" onclick="submitPayment()">SUBMIT</button></div></div></div>
@@ -192,7 +224,139 @@
 <div id="ledgerModal" class="modal"><div class="modal-content" style="max-width: 700px;"><div class="modal-header"><h3>📒 Ledger Account</h3><button class="close-modal-btn" onclick="closeModal('ledgerModal')">&times;</button></div><div id="ledgerContent"></div><div class="action-btn-row"><button class="btn-cancel" onclick="closeModal('ledgerModal')">CLOSE</button></div></div></div>
 
 <script>
-// ==================== BLOCK-005: DATABASE & GLOBALS ====================
+// ==================== BLOCK-006: FIREBASE SETUP ====================
+var firebaseApp = null;
+var dbRef = null;
+var isFirebaseConnected = false;
+
+// Load Firebase config from localStorage
+function loadFirebaseConfig() {
+    var config = localStorage.getItem('FIREBASE_CONFIG');
+    if (config) {
+        try {
+            var fbConfig = JSON.parse(config);
+            initializeFirebase(fbConfig);
+            return true;
+        } catch(e) { return false; }
+    }
+    return false;
+}
+
+function initializeFirebase(config) {
+    try {
+        if (firebase.apps.length) {
+            firebaseApp = firebase.app();
+        } else {
+            firebaseApp = firebase.initializeApp(config);
+        }
+        dbRef = firebase.database().ref('shg_data');
+        isFirebaseConnected = true;
+        updateSyncStatus(true);
+        
+        // Listen for real-time updates
+        dbRef.on('value', function(snapshot) {
+            if (snapshot.exists()) {
+                var cloudData = snapshot.val();
+                if (cloudData.DB && !window.isLocalUpdate) {
+                    DB = cloudData.DB;
+                    if (cloudData.pendingPayments) pendingPayments = cloudData.pendingPayments;
+                    if (currentSession.loggedIn) loadDashboard();
+                    showNotification('Data synced from cloud!', 'alert');
+                }
+            }
+            updateSyncStatus(true);
+        }, function(error) {
+            console.error('Firebase error:', error);
+            updateSyncStatus(false);
+        });
+        
+        return true;
+    } catch(e) {
+        console.error('Firebase init error:', e);
+        isFirebaseConnected = false;
+        updateSyncStatus(false);
+        return false;
+    }
+}
+
+function updateSyncStatus(connected) {
+    var statusDot = document.getElementById('syncStatus');
+    var statusText = document.getElementById('syncText');
+    if (connected && isFirebaseConnected) {
+        if (statusDot) { statusDot.className = 'sync-status online'; }
+        if (statusText) { statusText.innerHTML = '☁️ Cloud Sync ON'; }
+    } else {
+        if (statusDot) { statusDot.className = 'sync-status offline'; }
+        if (statusText) { statusText.innerHTML = '📡 Offline Mode'; }
+    }
+}
+
+function syncToCloud() {
+    if (!isFirebaseConnected || !dbRef) {
+        showNotification('Firebase not connected. Please configure first.', 'error');
+        return;
+    }
+    
+    window.isLocalUpdate = true;
+    var dataToSync = {
+        DB: DB,
+        pendingPayments: pendingPayments,
+        lastSync: new Date().toISOString()
+    };
+    dbRef.set(dataToSync).then(function() {
+        showNotification('Data synced to cloud successfully!', 'alert');
+        window.isLocalUpdate = false;
+    }).catch(function(error) {
+        console.error('Sync error:', error);
+        showNotification('Sync failed: ' + error.message, 'error');
+        window.isLocalUpdate = false;
+    });
+}
+
+function showFirebaseConfig() {
+    // Load existing config if any
+    var existing = localStorage.getItem('FIREBASE_CONFIG');
+    if (existing) {
+        try {
+            var cfg = JSON.parse(existing);
+            document.getElementById('fbProjectId').value = cfg.projectId || '';
+            document.getElementById('fbApiKey').value = cfg.apiKey || '';
+            document.getElementById('fbAuthDomain').value = cfg.authDomain || '';
+            document.getElementById('fbDatabaseURL').value = cfg.databaseURL || '';
+            document.getElementById('fbStorageBucket').value = cfg.storageBucket || '';
+            document.getElementById('fbAppId').value = cfg.appId || '';
+        } catch(e) {}
+    }
+    openModal('firebaseConfigModal');
+}
+
+function saveFirebaseConfig() {
+    var config = {
+        apiKey: document.getElementById('fbApiKey').value,
+        authDomain: document.getElementById('fbAuthDomain').value,
+        databaseURL: document.getElementById('fbDatabaseURL').value,
+        projectId: document.getElementById('fbProjectId').value,
+        storageBucket: document.getElementById('fbStorageBucket').value,
+        appId: document.getElementById('fbAppId').value
+    };
+    
+    if (!config.apiKey || !config.databaseURL) {
+        alert('Please enter at least API Key and Database URL');
+        return;
+    }
+    
+    localStorage.setItem('FIREBASE_CONFIG', JSON.stringify(config));
+    
+    if (initializeFirebase(config)) {
+        showNotification('Firebase connected! Syncing data...', 'alert');
+        setTimeout(function() { syncToCloud(); }, 1000);
+        closeModal('firebaseConfigModal');
+    } else {
+        alert('Failed to connect. Check your configuration.');
+    }
+}
+
+// ==================== BLOCK-007: DATABASE & GLOBALS ====================
 var DB = {
     conf: { name: "AL AMIN GROUP", addr: "Bahrain", pass: "123", cur: "BHD", reg: 5.000, dep: 5.000, proc: 2.000, emi: 10.000, don: 5.000, don_mo: 11, mw: 6, ml: 6, max: 1000.000, tier1: 0, tier2: 200, tier3: 300, tier4: 400, tier5: 500 },
     members: [], accounts: [], loans: [], requests: [], transactions: [], transferRequests: []
@@ -204,7 +368,7 @@ var pendingPayments = [];
 var notifications = [];
 var backupIntervalId = null;
 
-// ==================== BLOCK-006: SAMPLE DATA ====================
+// ==================== BLOCK-008: SAMPLE DATA ====================
 function addSampleData() {
     DB.members = []; DB.accounts = []; DB.loans = []; DB.requests = []; DB.transactions = []; DB.transferRequests = [];
     
@@ -234,7 +398,16 @@ function addSampleData() {
     saveData();
 }
 
-function saveData() { try { localStorage.setItem('SHG_PRO_DATA', JSON.stringify(DB)); } catch(e) {} }
+function saveData() { 
+    try { 
+        localStorage.setItem('SHG_PRO_DATA', JSON.stringify(DB)); 
+        // Auto-sync to cloud if connected
+        if (isFirebaseConnected && dbRef && !window.isLocalUpdate) {
+            setTimeout(function() { syncToCloud(); }, 500);
+        }
+    } catch(e) {} 
+}
+
 function loadData() { 
     var saved = localStorage.getItem('SHG_PRO_DATA'); 
     if (saved) { 
@@ -257,7 +430,7 @@ function openModal(id) { var modal = document.getElementById(id); if (modal) mod
 function closeModal(id) { var modal = document.getElementById(id); if (modal) modal.style.display = 'none'; }
 function closeDrilldown() { document.getElementById('drilldownPanel').style.display = 'none'; }
 
-// ==================== BLOCK-007: LOGIN SYSTEM ====================
+// ==================== BLOCK-009: LOGIN SYSTEM ====================
 function performLogin() {
     var userType = document.getElementById('userRoleSelect').value;
     var username = document.getElementById('loginUsername').value.trim();
@@ -325,7 +498,7 @@ function logoutUser() {
     showNotification('Logged out successfully');
 }
 
-// ==================== BLOCK-008: DASHBOARD LOADER ====================
+// ==================== BLOCK-010: DASHBOARD LOADER ====================
 function loadDashboard() {
     var role = currentSession.userType;
     if (role === 'member') loadMemberDashboard();
@@ -334,7 +507,7 @@ function loadDashboard() {
     else if (role === 'it') loadITDashboard();
 }
 
-// ==================== BLOCK-009: MEMBER DASHBOARD ====================
+// ==================== BLOCK-011: MEMBER DASHBOARD ====================
 function loadMemberDashboard() {
     if (!currentMember) return;
     
@@ -407,6 +580,7 @@ function submitPayment() {
         status: 'pending'
     });
     localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments));
+    saveData();
     showNotification('Payment request submitted! Admin notified.', 'alert');
     closeModal('paymentModal');
 }
@@ -552,7 +726,7 @@ function showAccountTransactions(accountId) {
     document.getElementById('drilldownPanel').style.display = 'block';
 }
 
-// LOANS DRILLDOWN (EMI SEPARATE - NOT CREDITED TO SAVINGS)
+// LOANS DRILLDOWN
 function showLoansDrilldown() {
     if (!currentMember) return;
     var loans = DB.loans.filter(function(l) { return l.memberId === currentMember.id && l.status === 'active'; });
@@ -638,11 +812,12 @@ function payEMI(loanId, amount) {
         status: 'pending'
     });
     localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments));
+    saveData();
     showNotification('EMI Payment request submitted! Admin notified.', 'alert');
     showLoanDetails(loanId);
 }
 
-// ==================== BLOCK-010: LEADER DASHBOARD ====================
+// ==================== BLOCK-012: LEADER DASHBOARD ====================
 function loadLeaderDashboard() {
     if (!currentMember) return;
     
@@ -813,7 +988,7 @@ function registerNewMember() {
     loadDashboard();
 }
 
-// ==================== BLOCK-011: ADMIN DASHBOARD ====================
+// ==================== BLOCK-013: ADMIN DASHBOARD ====================
 function loadAdminDashboard() {
     var leaders = DB.members.filter(function(m) { return m.type === 'leader'; }).length;
     var members = DB.members.filter(function(m) { return m.type === 'member'; }).length;
@@ -838,6 +1013,7 @@ function loadAdminDashboard() {
     buttonsHtml += '<button class="dashboard-btn dashboard-btn-warning" onclick="openPaymentApproval()">💳 Payment Approval</button>';
     buttonsHtml += '<button class="dashboard-btn dashboard-btn-purple" onclick="openLeaderRegistrationModal()">⭐ Register Leader</button>';
     buttonsHtml += '<button class="dashboard-btn dashboard-btn-info" onclick="openLedgerModal()">📒 Ledger</button>';
+    buttonsHtml += '<button class="dashboard-btn dashboard-btn-info" onclick="syncToCloud()">☁️ Sync to Cloud</button>';
     buttonsHtml += '<button class="dashboard-btn dashboard-btn-danger" onclick="openBackupRestoreModal()">💾 Backup/Restore</button>';
     document.getElementById('buttonGrid').innerHTML = buttonsHtml;
 }
@@ -1161,7 +1337,8 @@ function restoreFromFile() {
             if (data.pendingPayments) pendingPayments = data.pendingPayments;
             saveData();
             localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments));
-            showNotification('Restore successful! Refreshing...', 'alert');
+            showNotification('Restore successful! Syncing to cloud...', 'alert');
+            if (isFirebaseConnected) setTimeout(function() { syncToCloud(); }, 1000);
             setTimeout(function() { location.reload(); }, 1500);
         } catch(err) { alert('Invalid backup file'); }
     };
@@ -1203,7 +1380,7 @@ function sendNotificationMsg() {
 }
 function updateCurrencyFormat() { }
 
-// ==================== BLOCK-012: IT DASHBOARD (FULL ACCESS) ====================
+// ==================== BLOCK-014: IT DASHBOARD (FULL ACCESS) ====================
 function loadITDashboard() {
     var leaders = DB.members.filter(function(m) { return m.type === 'leader'; }).length;
     var members = DB.members.filter(function(m) { return m.type === 'member'; }).length;
@@ -1231,6 +1408,7 @@ function loadITDashboard() {
     buttonsHtml += '<button class="dashboard-btn dashboard-btn-danger" onclick="showAllMembersWithEdit()">👥 Members (Edit)</button>';
     buttonsHtml += '<button class="dashboard-btn dashboard-btn-info" onclick="showAllAccountsWithEdit()">💰 Accounts (Edit)</button>';
     buttonsHtml += '<button class="dashboard-btn dashboard-btn-purple" onclick="showAllLoansWithEdit()">📋 Loans (Edit)</button>';
+    buttonsHtml += '<button class="dashboard-btn dashboard-btn-info" onclick="syncToCloud()">☁️ Sync to Cloud</button>';
     buttonsHtml += '<button class="dashboard-btn dashboard-btn-danger" onclick="openBackupRestoreModal()">💾 Backup/Restore</button>';
     document.getElementById('buttonGrid').innerHTML = buttonsHtml;
 }
@@ -1477,7 +1655,7 @@ function openLeaderMemberRegistration() {
     openModal('memberRegistrationModal');
 }
 
-// ==================== BLOCK-013: RECEIPT SYSTEM ====================
+// ==================== BLOCK-015: RECEIPT SYSTEM ====================
 function showReceipt(transactionId) {
     var t = DB.transactions.find(function(tx) { return tx.id === transactionId; });
     if (!t) { alert('Transaction not found'); return; }
@@ -1543,7 +1721,7 @@ function closeReceipt() {
     if (modal) modal.remove();
 }
 
-// ==================== BLOCK-014: PROFILE & PASSWORD ====================
+// ==================== BLOCK-016: PROFILE & PASSWORD ====================
 function showProfileModal() {
     var member = DB.members.find(function(m) { return m.id === currentSession.userId; });
     if (!member) { alert('Profile not found'); return; }
@@ -1567,12 +1745,18 @@ function updatePassword() {
     } else { alert('Current password incorrect'); }
 }
 
-// ==================== BLOCK-015: INIT SYSTEM ====================
+// ==================== BLOCK-017: INIT SYSTEM ====================
 function initSystem() {
     loadData();
     pendingPayments = localStorage.getItem('SHG_PENDING_PAYMENTS');
     if (pendingPayments) pendingPayments = JSON.parse(pendingPayments);
     else pendingPayments = [];
+    
+    // Try to load Firebase config
+    var firebaseConfigured = loadFirebaseConfig();
+    if (!firebaseConfigured) {
+        updateSyncStatus(false);
+    }
     
     var savedInterval = localStorage.getItem('BACKUP_INTERVAL');
     if (savedInterval) {
