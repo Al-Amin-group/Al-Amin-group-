@@ -3,25 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AL AMIN GROUP - SHG PRO (Firebase Cloud)</title>
+    <title>AL AMIN GROUP - SHG PRO (Cloud Sync)</title>
     
     <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/12.11.0/firebase-database-compat.js"></script>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
-        /* Your existing CSS - keep as is */
         * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; }
         :root { --primary: #2c3e50; --secondary: #34495e; --success: #27ae60; --danger: #e74c3c; --warning: #f39c12; --info: #3498db; --light: #ecf0f1; --dark: #2c3e50; --bg: #f5f7fa; }
         body { background: var(--bg); color: var(--dark); padding-bottom: 30px; }
         .header { background: var(--primary); color: white; padding: 15px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .header h1 { font-size: 20px; margin-bottom: 5px; }
         .header p { font-size: 12px; opacity: 0.9; }
+        
+        /* Sync Status Indicator */
+        .sync-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-left: 10px; }
+        .sync-status.online { background: #27ae60; box-shadow: 0 0 5px #27ae60; animation: pulse 2s infinite; }
+        .sync-status.offline { background: #e74c3c; }
+        .sync-status.syncing { background: #f39c12; animation: pulse 0.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         
         .login-panel { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 12px; border-radius: 16px; padding: 20px; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
         .login-container { max-width: 450px; margin: 0 auto; background: white; border-radius: 16px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -105,13 +110,6 @@
         .notification.warning { background: var(--warning); }
         @keyframes slideIn { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
         
-        /* Sync Status Indicator */
-        .sync-status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-left: 10px; }
-        .sync-status.online { background: #27ae60; box-shadow: 0 0 5px #27ae60; }
-        .sync-status.offline { background: #e74c3c; box-shadow: 0 0 5px #e74c3c; }
-        .sync-status.syncing { background: #f39c12; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-        
         @media (max-width: 768px) {
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .button-grid { grid-template-columns: repeat(2, 1fr); }
@@ -121,28 +119,13 @@
 </head>
 <body onload="initSystem()">
 
-<!-- ==================== BLOCK-001: HEADER ==================== -->
+<!-- ==================== HEADER ==================== -->
 <div class="header">
     <h1 id="d-comp">AL AMIN GROUP</h1>
     <p id="d-addr">Bahrain <span class="sync-status" id="syncStatus"></span> <span id="syncText" style="font-size:10px; margin-left:5px;"></span></p>
 </div>
 
-<!-- ==================== BLOCK-002: FIREBASE CONFIG MODAL ==================== -->
-<div id="firebaseConfigModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header"><h3>🔥 Firebase Configuration</h3><button class="close-modal-btn" onclick="closeModal('firebaseConfigModal')">&times;</button></div>
-        <div class="form-group"><label>Firebase Project ID</label><input type="text" id="fbProjectId" placeholder="your-project-id"></div>
-        <div class="form-group"><label>API Key</label><input type="text" id="fbApiKey" placeholder="AIzaSy..."></div>
-        <div class="form-group"><label>Auth Domain</label><input type="text" id="fbAuthDomain" placeholder="your-project.firebaseapp.com"></div>
-        <div class="form-group"><label>Database URL</label><input type="text" id="fbDatabaseURL" placeholder="https://your-project.firebaseio.com"></div>
-        <div class="form-group"><label>Storage Bucket</label><input type="text" id="fbStorageBucket" placeholder="your-project.appspot.com"></div>
-        <div class="form-group"><label>App ID</label><input type="text" id="fbAppId" placeholder="1:xxx:web:xxx"></div>
-        <div class="info-text" style="margin-bottom:15px;">📌 Get these from Firebase Console → Project Settings → General</div>
-        <div class="action-btn-row"><button class="btn-cancel" onclick="closeModal('firebaseConfigModal')">CANCEL</button><button class="btn-save" onclick="saveFirebaseConfig()">CONNECT</button></div>
-    </div>
-</div>
-
-<!-- ==================== BLOCK-003: LOGIN PANEL ==================== -->
+<!-- ==================== LOGIN PANEL ==================== -->
 <div id="loginPanel" class="login-panel">
     <div class="login-container">
         <h3>🔐 AL AMIN GROUP</h3>
@@ -171,11 +154,10 @@
             ⭐ Leader: Ahmed Hassan / PIN: 5678<br>
             👑 Admin: admin / admin123 | 💻 IT: it / it123
         </div>
-        <button class="login-btn" onclick="showFirebaseConfig()" style="background:#ff9800; margin-top:10px;">🔥 Configure Firebase</button>
     </div>
 </div>
 
-<!-- ==================== BLOCK-004: DASHBOARD CONTAINER ==================== -->
+<!-- ==================== DASHBOARD CONTAINER ==================== -->
 <div id="dashboardContainer" style="display:none;">
     <div class="dashboard-container">
         <div class="welcome-card">
@@ -204,7 +186,7 @@
     </div>
 </div>
 
-<!-- ==================== BLOCK-005: MODALS ==================== -->
+<!-- ==================== MODALS ==================== -->
 <div id="profileModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>👤 My Profile</h3><button class="close-modal-btn" onclick="closeModal('profileModal')">&times;</button></div><div id="profileContent"></div><div class="action-btn-row"><button class="btn-cancel" onclick="closeModal('profileModal')">CLOSE</button></div></div></div>
 <div id="changePasswordModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>🔑 Change Password</h3><button class="close-modal-btn" onclick="closeModal('changePasswordModal')">&times;</button></div><div class="form-group"><label>Current Password</label><input type="password" id="currentPassword"></div><div class="form-group"><label>New Password</label><input type="password" id="newPassword"></div><div class="form-group"><label>Confirm Password</label><input type="password" id="confirmPassword"></div><div class="action-btn-row"><button class="btn-cancel" onclick="closeModal('changePasswordModal')">CANCEL</button><button class="btn-save" onclick="updatePassword()">UPDATE</button></div></div></div>
 <div id="paymentModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>💳 Make Payment</h3><button class="close-modal-btn" onclick="closeModal('paymentModal')">&times;</button></div><div class="form-group"><label>Select Account</label><select id="paymentAccount"></select></div><div class="form-group"><label>Payment Type</label><select id="paymentType" onchange="updatePaymentAmount()"><option value="reg">📝 Registration Fee</option><option value="dep">💰 Monthly Deposit</option><option value="adv_dep">⭐ Advance Deposit</option><option value="wd_part">💸 Withdrawal (Partial)</option><option value="wd_full">🏦 Withdrawal (Full)</option><option value="proc">⚙️ Loan Processing Fee</option><option value="emi">📅 EMI Payment</option><option value="adv_emi">🚀 Advance EMI</option><option value="loan_full">✅ Full Loan Settlement</option><option value="don">❤️ Donation</option><option value="other">🔧 Other</option></select></div><div class="form-group"><label>Amount</label><input type="number" id="paymentAmount" step="0.001" value="5.000"></div><div class="form-group"><label>Next Due Month</label><input type="text" id="nextDueMonth" readonly style="background:#f5f5f5;"></div><div class="form-group"><label>Reference</label><input type="text" id="paymentRef" placeholder="Optional reference"></div><div class="action-btn-row"><button class="btn-cancel" onclick="closeModal('paymentModal')">CANCEL</button><button class="btn-save" onclick="submitPayment()">SUBMIT</button></div></div></div>
@@ -224,44 +206,45 @@
 <div id="ledgerModal" class="modal"><div class="modal-content" style="max-width: 700px;"><div class="modal-header"><h3>📒 Ledger Account</h3><button class="close-modal-btn" onclick="closeModal('ledgerModal')">&times;</button></div><div id="ledgerContent"></div><div class="action-btn-row"><button class="btn-cancel" onclick="closeModal('ledgerModal')">CLOSE</button></div></div></div>
 
 <script>
-// ==================== BLOCK-006: FIREBASE SETUP ====================
-var firebaseApp = null;
-var dbRef = null;
-var isFirebaseConnected = false;
+// ==================== FIREBASE CONFIGURATION (YOUR CONFIG) ====================
+const firebaseConfig = {
+    apiKey: "AIzaSyArosE5bJYiz8eGpGv5_IohwqBhLV4O7fY",
+    authDomain: "al-amin-group.firebaseapp.com",
+    projectId: "al-amin-group",
+    storageBucket: "al-amin-group.firebasestorage.app",
+    messagingSenderId: "1024609598951",
+    appId: "1:1024609598951:web:852616423f8b253acc1142"
+};
 
-// Load Firebase config from localStorage
-function loadFirebaseConfig() {
-    var config = localStorage.getItem('FIREBASE_CONFIG');
-    if (config) {
-        try {
-            var fbConfig = JSON.parse(config);
-            initializeFirebase(fbConfig);
-            return true;
-        } catch(e) { return false; }
-    }
-    return false;
-}
+// ==================== INITIALIZE FIREBASE ====================
+let firebaseApp = null;
+let dbRef = null;
+let isFirebaseConnected = false;
+let isLocalUpdate = false;
 
-function initializeFirebase(config) {
+function initFirebase() {
     try {
         if (firebase.apps.length) {
             firebaseApp = firebase.app();
         } else {
-            firebaseApp = firebase.initializeApp(config);
+            firebaseApp = firebase.initializeApp(firebaseConfig);
         }
         dbRef = firebase.database().ref('shg_data');
         isFirebaseConnected = true;
         updateSyncStatus(true);
         
-        // Listen for real-time updates
+        // Listen for real-time updates from cloud
         dbRef.on('value', function(snapshot) {
-            if (snapshot.exists()) {
-                var cloudData = snapshot.val();
-                if (cloudData.DB && !window.isLocalUpdate) {
+            if (snapshot.exists() && !isLocalUpdate) {
+                const cloudData = snapshot.val();
+                if (cloudData.DB) {
                     DB = cloudData.DB;
                     if (cloudData.pendingPayments) pendingPayments = cloudData.pendingPayments;
-                    if (currentSession.loggedIn) loadDashboard();
-                    showNotification('Data synced from cloud!', 'alert');
+                    saveDataToLocal();
+                    if (currentSession.loggedIn) {
+                        loadDashboard();
+                        showNotification('🔄 Data synced from cloud!', 'alert');
+                    }
                 }
             }
             updateSyncStatus(true);
@@ -270,6 +253,7 @@ function initializeFirebase(config) {
             updateSyncStatus(false);
         });
         
+        console.log('Firebase connected successfully!');
         return true;
     } catch(e) {
         console.error('Firebase init error:', e);
@@ -280,83 +264,47 @@ function initializeFirebase(config) {
 }
 
 function updateSyncStatus(connected) {
-    var statusDot = document.getElementById('syncStatus');
-    var statusText = document.getElementById('syncText');
+    const statusDot = document.getElementById('syncStatus');
+    const statusText = document.getElementById('syncText');
     if (connected && isFirebaseConnected) {
-        if (statusDot) { statusDot.className = 'sync-status online'; }
-        if (statusText) { statusText.innerHTML = '☁️ Cloud Sync ON'; }
+        if (statusDot) statusDot.className = 'sync-status online';
+        if (statusText) statusText.innerHTML = '☁️ Cloud Sync ON';
     } else {
-        if (statusDot) { statusDot.className = 'sync-status offline'; }
-        if (statusText) { statusText.innerHTML = '📡 Offline Mode'; }
+        if (statusDot) statusDot.className = 'sync-status offline';
+        if (statusText) statusText.innerHTML = '📡 Offline Mode';
     }
 }
 
 function syncToCloud() {
     if (!isFirebaseConnected || !dbRef) {
-        showNotification('Firebase not connected. Please configure first.', 'error');
+        showNotification('⚠️ Firebase not connected. Check your internet connection.', 'error');
         return;
     }
     
-    window.isLocalUpdate = true;
-    var dataToSync = {
+    isLocalUpdate = true;
+    updateSyncStatus(false);
+    const syncText = document.getElementById('syncText');
+    if (syncText) syncText.innerHTML = '🔄 Syncing...';
+    
+    const dataToSync = {
         DB: DB,
         pendingPayments: pendingPayments,
         lastSync: new Date().toISOString()
     };
-    dbRef.set(dataToSync).then(function() {
-        showNotification('Data synced to cloud successfully!', 'alert');
-        window.isLocalUpdate = false;
-    }).catch(function(error) {
+    
+    dbRef.set(dataToSync).then(() => {
+        showNotification('✅ Data synced to cloud successfully!', 'alert');
+        isLocalUpdate = false;
+        updateSyncStatus(true);
+    }).catch((error) => {
         console.error('Sync error:', error);
-        showNotification('Sync failed: ' + error.message, 'error');
-        window.isLocalUpdate = false;
+        showNotification('❌ Sync failed: ' + error.message, 'error');
+        isLocalUpdate = false;
+        updateSyncStatus(false);
     });
 }
 
-function showFirebaseConfig() {
-    // Load existing config if any
-    var existing = localStorage.getItem('FIREBASE_CONFIG');
-    if (existing) {
-        try {
-            var cfg = JSON.parse(existing);
-            document.getElementById('fbProjectId').value = cfg.projectId || '';
-            document.getElementById('fbApiKey').value = cfg.apiKey || '';
-            document.getElementById('fbAuthDomain').value = cfg.authDomain || '';
-            document.getElementById('fbDatabaseURL').value = cfg.databaseURL || '';
-            document.getElementById('fbStorageBucket').value = cfg.storageBucket || '';
-            document.getElementById('fbAppId').value = cfg.appId || '';
-        } catch(e) {}
-    }
-    openModal('firebaseConfigModal');
-}
-
-function saveFirebaseConfig() {
-    var config = {
-        apiKey: document.getElementById('fbApiKey').value,
-        authDomain: document.getElementById('fbAuthDomain').value,
-        databaseURL: document.getElementById('fbDatabaseURL').value,
-        projectId: document.getElementById('fbProjectId').value,
-        storageBucket: document.getElementById('fbStorageBucket').value,
-        appId: document.getElementById('fbAppId').value
-    };
-    
-    if (!config.apiKey || !config.databaseURL) {
-        alert('Please enter at least API Key and Database URL');
-        return;
-    }
-    
-    localStorage.setItem('FIREBASE_CONFIG', JSON.stringify(config));
-    
-    if (initializeFirebase(config)) {
-        showNotification('Firebase connected! Syncing data...', 'alert');
-        setTimeout(function() { syncToCloud(); }, 1000);
-        closeModal('firebaseConfigModal');
-    } else {
-        alert('Failed to connect. Check your configuration.');
-    }
-}
-
-// ==================== BLOCK-007: DATABASE & GLOBALS ====================
+// ==================== DATABASE & GLOBALS ====================
 var DB = {
     conf: { name: "AL AMIN GROUP", addr: "Bahrain", pass: "123", cur: "BHD", reg: 5.000, dep: 5.000, proc: 2.000, emi: 10.000, don: 5.000, don_mo: 11, mw: 6, ml: 6, max: 1000.000, tier1: 0, tier2: 200, tier3: 300, tier4: 400, tier5: 500 },
     members: [], accounts: [], loans: [], requests: [], transactions: [], transferRequests: []
@@ -368,7 +316,7 @@ var pendingPayments = [];
 var notifications = [];
 var backupIntervalId = null;
 
-// ==================== BLOCK-008: SAMPLE DATA ====================
+// ==================== SAMPLE DATA ====================
 function addSampleData() {
     DB.members = []; DB.accounts = []; DB.loans = []; DB.requests = []; DB.transactions = []; DB.transferRequests = [];
     
@@ -395,25 +343,25 @@ function addSampleData() {
     DB.transactions.push({ id: 'TXN' + Date.now() + 100, accountId: 'ACC1002', memberId: member1Id, type: 'dep', amount: 5, reference: 'Monthly Deposit', date: new Date().toISOString(), dateTime: new Date().toISOString() });
     DB.transactions.push({ id: 'TXN' + Date.now() + 101, accountId: 'ACC1003', memberId: member1Id, type: 'dep', amount: 5, reference: 'Monthly Deposit', date: new Date().toISOString(), dateTime: new Date().toISOString() });
     
-    saveData();
+    saveDataToLocal();
 }
 
-function saveData() { 
+function saveDataToLocal() { 
     try { 
         localStorage.setItem('SHG_PRO_DATA', JSON.stringify(DB)); 
-        // Auto-sync to cloud if connected
-        if (isFirebaseConnected && dbRef && !window.isLocalUpdate) {
-            setTimeout(function() { syncToCloud(); }, 500);
+        if (isFirebaseConnected && dbRef && !isLocalUpdate) {
+            setTimeout(() => syncToCloud(), 500);
         }
     } catch(e) {} 
 }
 
-function loadData() { 
+function loadDataFromLocal() { 
     var saved = localStorage.getItem('SHG_PRO_DATA'); 
     if (saved) { 
-        try { DB = JSON.parse(saved); 
-        if (!DB.members || DB.members.length === 0) addSampleData(); 
-        if (!DB.transferRequests) DB.transferRequests = [];
+        try { 
+            DB = JSON.parse(saved); 
+            if (!DB.members || DB.members.length === 0) addSampleData(); 
+            if (!DB.transferRequests) DB.transferRequests = [];
         } catch(e) { addSampleData(); } 
     } else { addSampleData(); } 
 }
@@ -430,7 +378,7 @@ function openModal(id) { var modal = document.getElementById(id); if (modal) mod
 function closeModal(id) { var modal = document.getElementById(id); if (modal) modal.style.display = 'none'; }
 function closeDrilldown() { document.getElementById('drilldownPanel').style.display = 'none'; }
 
-// ==================== BLOCK-009: LOGIN SYSTEM ====================
+// ==================== LOGIN SYSTEM ====================
 function performLogin() {
     var userType = document.getElementById('userRoleSelect').value;
     var username = document.getElementById('loginUsername').value.trim();
@@ -466,7 +414,7 @@ function performLogin() {
     var expectedPIN = member.pin || member.mobile.slice(-4);
     if (isMaster || password === expectedPIN) {
         member.lastLogin = new Date().toISOString();
-        saveData();
+        saveDataToLocal();
         currentSession = { loggedIn: true, userType: member.type === 'leader' ? 'leader' : 'member', userId: member.id, userName: member.name, lastLogin: member.lastLogin };
         completeLogin();
         return;
@@ -498,7 +446,7 @@ function logoutUser() {
     showNotification('Logged out successfully');
 }
 
-// ==================== BLOCK-010: DASHBOARD LOADER ====================
+// ==================== DASHBOARD LOADER ====================
 function loadDashboard() {
     var role = currentSession.userType;
     if (role === 'member') loadMemberDashboard();
@@ -507,7 +455,7 @@ function loadDashboard() {
     else if (role === 'it') loadITDashboard();
 }
 
-// ==================== BLOCK-011: MEMBER DASHBOARD ====================
+// ==================== MEMBER DASHBOARD ====================
 function loadMemberDashboard() {
     if (!currentMember) return;
     
@@ -580,7 +528,7 @@ function submitPayment() {
         status: 'pending'
     });
     localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments));
-    saveData();
+    saveDataToLocal();
     showNotification('Payment request submitted! Admin notified.', 'alert');
     closeModal('paymentModal');
 }
@@ -669,7 +617,7 @@ function submitLoanRequest() {
         requestDate: new Date().toISOString(),
         status: 'pending'
     });
-    saveData();
+    saveDataToLocal();
     showNotification('Loan request submitted! Admin notified.', 'alert');
     closeModal('loanRequestModal');
 }
@@ -812,12 +760,12 @@ function payEMI(loanId, amount) {
         status: 'pending'
     });
     localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments));
-    saveData();
+    saveDataToLocal();
     showNotification('EMI Payment request submitted! Admin notified.', 'alert');
     showLoanDetails(loanId);
 }
 
-// ==================== BLOCK-012: LEADER DASHBOARD ====================
+// ==================== LEADER DASHBOARD ====================
 function loadLeaderDashboard() {
     if (!currentMember) return;
     
@@ -952,7 +900,7 @@ function submitTransferRequest() {
         requestDate: new Date().toISOString(),
         status: 'pending'
     });
-    saveData();
+    saveDataToLocal();
     showNotification('Transfer request submitted for admin approval!');
     closeModal('transferRequestModal');
 }
@@ -982,13 +930,13 @@ function registerNewMember() {
         pin: mobile.slice(-4),
         lastLogin: null
     });
-    saveData();
+    saveDataToLocal();
     showNotification('Member registered! PIN: ' + mobile.slice(-4));
     closeModal('memberRegistrationModal');
     loadDashboard();
 }
 
-// ==================== BLOCK-013: ADMIN DASHBOARD ====================
+// ==================== ADMIN DASHBOARD ====================
 function loadAdminDashboard() {
     var leaders = DB.members.filter(function(m) { return m.type === 'leader'; }).length;
     var members = DB.members.filter(function(m) { return m.type === 'member'; }).length;
@@ -1126,7 +1074,7 @@ function approvePayment(paymentId) {
                 account.balance += payment.amount;
             }
             DB.transactions.push({ id: 'TXN' + Date.now(), accountId: payment.accountId, memberId: payment.memberId, type: payment.type, amount: payment.amount, reference: payment.reference, date: new Date().toISOString(), dateTime: new Date().toISOString(), loanId: payment.loanId });
-            saveData();
+            saveDataToLocal();
         }
         localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments));
         showNotification('Payment approved for ' + payment.memberName, 'alert');
@@ -1163,7 +1111,7 @@ function approveLoan(requestId) {
     if (req) {
         req.status = 'approved';
         DB.loans.push({ id: 'LOAN' + Date.now(), memberId: req.memberId, memberName: req.memberName, accountId: req.accountId, amount: req.amount, paidAmount: 0, status: 'active', approvalDate: new Date().toISOString().split('T')[0], approvalDateTime: new Date().toISOString(), emiAmount: DB.conf.emi, totalEmis: Math.ceil(req.amount / DB.conf.emi), paidEmis: 0 });
-        saveData();
+        saveDataToLocal();
         showNotification('Loan approved for ' + req.memberName, 'alert');
         openLoanApproval();
         loadDashboard();
@@ -1172,7 +1120,7 @@ function approveLoan(requestId) {
 
 function rejectLoan(requestId) {
     var req = DB.requests.find(function(r) { return r.id === requestId; });
-    if (req) { req.status = 'rejected'; saveData(); showNotification('Loan rejected'); openLoanApproval(); }
+    if (req) { req.status = 'rejected'; saveDataToLocal(); showNotification('Loan rejected'); openLoanApproval(); }
 }
 
 function openTransferApproval() {
@@ -1197,7 +1145,7 @@ function approveTransfer(transferId) {
         if (member) {
             member.leaderId = transfer.newLeaderId;
             transfer.status = 'approved';
-            saveData();
+            saveDataToLocal();
             showNotification('Member transferred successfully!', 'alert');
             openTransferApproval();
             loadDashboard();
@@ -1207,7 +1155,7 @@ function approveTransfer(transferId) {
 
 function rejectTransfer(transferId) {
     var transfer = DB.transferRequests.find(function(t) { return t.id === transferId; });
-    if (transfer) { transfer.status = 'rejected'; saveData(); showNotification('Transfer rejected'); openTransferApproval(); }
+    if (transfer) { transfer.status = 'rejected'; saveDataToLocal(); showNotification('Transfer rejected'); openTransferApproval(); }
 }
 
 function openSettings() {
@@ -1253,7 +1201,7 @@ function saveSettings() {
     DB.conf.tier3 = parseInt(document.getElementById('setTier3').value) || 0;
     DB.conf.tier4 = parseInt(document.getElementById('setTier4').value) || 0;
     DB.conf.tier5 = parseInt(document.getElementById('setTier5').value) || 0;
-    saveData();
+    saveDataToLocal();
     document.getElementById('d-comp').innerHTML = DB.conf.name;
     document.getElementById('d-addr').innerHTML = DB.conf.addr;
     showNotification('Settings saved');
@@ -1272,7 +1220,7 @@ function openSavingsAccount() {
     if (!memberId) { alert('Select member'); return; }
     var member = DB.members.find(function(m) { return m.id === memberId; });
     DB.accounts.push({ id: 'ACC' + Date.now(), memberId: member.id, memberName: member.name, openDate: new Date().toISOString().split('T')[0], openDateTime: new Date().toISOString(), balance: 0, status: 'active' });
-    saveData();
+    saveDataToLocal();
     showNotification('Account opened for ' + member.name);
     closeModal('openAccountModal');
     loadDashboard();
@@ -1286,7 +1234,7 @@ function registerNewLeader() {
     var idc = document.getElementById('leaderRegId').value.trim();
     if (!name || !email || !mobile || !idc) { alert('All fields required'); return; }
     DB.members.push({ id: 'L' + Date.now(), type: 'leader', name: name, email: email, mobile: mobile, idc: idc, regDate: new Date().toISOString().split('T')[0], regDateTime: new Date().toISOString(), pin: mobile.slice(-4), lastLogin: null });
-    saveData();
+    saveDataToLocal();
     showNotification('Leader registered! PIN: ' + mobile.slice(-4));
     closeModal('leaderRegistrationModal');
     loadDashboard();
@@ -1335,7 +1283,7 @@ function restoreFromFile() {
             var data = JSON.parse(e.target.result);
             if (data.db) DB = data.db;
             if (data.pendingPayments) pendingPayments = data.pendingPayments;
-            saveData();
+            saveDataToLocal();
             localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments));
             showNotification('Restore successful! Syncing to cloud...', 'alert');
             if (isFirebaseConnected) setTimeout(function() { syncToCloud(); }, 1000);
@@ -1351,7 +1299,7 @@ function recordExpense() {
     var amount = parseFloat(document.getElementById('expenseAmount').value);
     if (!desc || amount <= 0) { alert('Invalid expense'); return; }
     DB.transactions.push({ id: 'TXN' + Date.now(), type: 'exp', amount: amount, reference: desc, date: new Date().toISOString(), dateTime: new Date().toISOString() });
-    saveData();
+    saveDataToLocal();
     showNotification('Expense recorded: ' + formatAmount(amount));
     closeModal('expenseModal');
 }
@@ -1380,7 +1328,7 @@ function sendNotificationMsg() {
 }
 function updateCurrencyFormat() { }
 
-// ==================== BLOCK-014: IT DASHBOARD (FULL ACCESS) ====================
+// ==================== IT DASHBOARD ====================
 function loadITDashboard() {
     var leaders = DB.members.filter(function(m) { return m.type === 'leader'; }).length;
     var members = DB.members.filter(function(m) { return m.type === 'member'; }).length;
@@ -1449,7 +1397,7 @@ function saveMemberEdit() {
         member.mobile = document.getElementById('editMemberMobile').value;
         member.idc = document.getElementById('editMemberIdc').value;
         member.leaderId = document.getElementById('editMemberLeader').value;
-        saveData();
+        saveDataToLocal();
         showNotification('Member updated');
         closeModal('editMemberModal');
         showAllMembersWithEdit();
@@ -1465,7 +1413,7 @@ function deleteMemberById(memberId) {
         DB.loans = DB.loans.filter(function(l) { return l.memberId !== memberId; });
         DB.requests = DB.requests.filter(function(r) { return r.memberId !== memberId; });
         DB.members = DB.members.filter(function(m) { return m.id !== memberId; });
-        saveData();
+        saveDataToLocal();
         showNotification('Member deleted');
         showAllMembersWithEdit();
         loadDashboard();
@@ -1499,7 +1447,7 @@ function saveAccountEdit() {
     if (account) {
         account.balance = parseFloat(document.getElementById('editAccountBalance').value);
         account.status = document.getElementById('editAccountStatus').value;
-        saveData();
+        saveDataToLocal();
         showNotification('Account updated');
         closeModal('editAccountModal');
         showAllAccountsWithEdit();
@@ -1511,7 +1459,7 @@ function deleteAccountById(accountId) {
     if (confirm('Delete this account? All transactions will be lost!')) {
         DB.transactions = DB.transactions.filter(function(t) { return t.accountId !== accountId; });
         DB.accounts = DB.accounts.filter(function(a) { return a.id !== accountId; });
-        saveData();
+        saveDataToLocal();
         showNotification('Account deleted');
         showAllAccountsWithEdit();
         loadDashboard();
@@ -1547,7 +1495,7 @@ function saveLoanEdit() {
         loan.amount = parseFloat(document.getElementById('editLoanAmount').value);
         loan.paidAmount = parseFloat(document.getElementById('editLoanPaid').value);
         loan.status = document.getElementById('editLoanStatus').value;
-        saveData();
+        saveDataToLocal();
         showNotification('Loan updated');
         closeModal('editLoanModal');
         showAllLoansWithEdit();
@@ -1558,7 +1506,7 @@ function saveLoanEdit() {
 function deleteLoanById(loanId) {
     if (confirm('Delete this loan?')) {
         DB.loans = DB.loans.filter(function(l) { return l.id !== loanId; });
-        saveData();
+        saveDataToLocal();
         showNotification('Loan deleted');
         showAllLoansWithEdit();
         loadDashboard();
@@ -1615,7 +1563,7 @@ function saveTransactionEdit() {
             transaction.date = new Date(newDate).toISOString();
             transaction.dateTime = new Date(newDate).toISOString();
         }
-        saveData();
+        saveDataToLocal();
         showNotification('Transaction updated');
         closeModal('editTransactionModal');
         showAllTransactionsWithEdit();
@@ -1638,7 +1586,7 @@ function deleteTransactionById(transactionId) {
             }
         }
         DB.transactions = DB.transactions.filter(function(t) { return t.id !== transactionId; });
-        saveData();
+        saveDataToLocal();
         showNotification('Transaction deleted');
         showAllTransactionsWithEdit();
         loadDashboard();
@@ -1655,7 +1603,7 @@ function openLeaderMemberRegistration() {
     openModal('memberRegistrationModal');
 }
 
-// ==================== BLOCK-015: RECEIPT SYSTEM ====================
+// ==================== RECEIPT SYSTEM ====================
 function showReceipt(transactionId) {
     var t = DB.transactions.find(function(tx) { return tx.id === transactionId; });
     if (!t) { alert('Transaction not found'); return; }
@@ -1721,7 +1669,7 @@ function closeReceipt() {
     if (modal) modal.remove();
 }
 
-// ==================== BLOCK-016: PROFILE & PASSWORD ====================
+// ==================== PROFILE & PASSWORD ====================
 function showProfileModal() {
     var member = DB.members.find(function(m) { return m.id === currentSession.userId; });
     if (!member) { alert('Profile not found'); return; }
@@ -1741,22 +1689,19 @@ function updatePassword() {
     if (newPass !== confirm) { alert('Passwords do not match'); return; }
     if (current === MASTER_PASSWORD || current === '123') {
         var member = DB.members.find(function(m) { return m.id === currentSession.userId; });
-        if (member) { member.pin = newPass; saveData(); showNotification('Password updated!'); closeModal('changePasswordModal'); }
+        if (member) { member.pin = newPass; saveDataToLocal(); showNotification('Password updated!'); closeModal('changePasswordModal'); }
     } else { alert('Current password incorrect'); }
 }
 
-// ==================== BLOCK-017: INIT SYSTEM ====================
+// ==================== INIT SYSTEM ====================
 function initSystem() {
-    loadData();
+    loadDataFromLocal();
     pendingPayments = localStorage.getItem('SHG_PENDING_PAYMENTS');
     if (pendingPayments) pendingPayments = JSON.parse(pendingPayments);
     else pendingPayments = [];
     
-    // Try to load Firebase config
-    var firebaseConfigured = loadFirebaseConfig();
-    if (!firebaseConfigured) {
-        updateSyncStatus(false);
-    }
+    // Initialize Firebase
+    initFirebase();
     
     var savedInterval = localStorage.getItem('BACKUP_INTERVAL');
     if (savedInterval) {
