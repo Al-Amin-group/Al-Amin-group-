@@ -58,9 +58,8 @@
         .nav-tab { text-align: center; color: #888; font-size: 10px; cursor: pointer; transition: 0.2s; padding: 8px 0; flex: 1; border-radius: 12px; }
         .nav-tab.active { color: #0a84ff; background: rgba(10, 132, 255, 0.1); }
         .nav-tab i { font-size: 22px; display: block; margin-bottom: 4px; font-style: normal; }
-        /* DRILLDOWN AS MODAL - POPUP WINDOW */
         .drilldown-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
-        .drilldown-modal-content { background: #1a1f2e; width: 92%; max-width: 550px; max-height: 85vh; overflow-y: auto; border: 1px solid #333; padding: 20px; border-radius: 16px; }
+        .drilldown-modal-content { background: #1a1f2e; width: 92%; max-width: 700px; max-height: 85vh; overflow-y: auto; border: 1px solid #333; padding: 20px; border-radius: 16px; }
         .drilldown-modal-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px; }
         .drilldown-modal-header h3 { color: white; }
         .close-drilldown-modal { background: #e74c3c; color: white; border: none; padding: 5px 15px; border-radius: 8px; cursor: pointer; }
@@ -72,6 +71,7 @@
         .action-btn-row { display: flex; justify-content: flex-end; gap: 12px; margin-top: 20px; }
         .btn-cancel { background: #e74c3c; color: white; border: none; border-radius: 12px; padding: 12px 25px; font-weight: 600; cursor: pointer; }
         .btn-save { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; border: none; border-radius: 12px; padding: 12px 25px; font-weight: 600; cursor: pointer; }
+        .btn-print { background: #3498db; color: white; border: none; border-radius: 12px; padding: 12px 25px; font-weight: 600; cursor: pointer; margin-left: 10px; }
         .item-card { background: #1a1a1a; padding: 16px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; cursor: pointer; transition: 0.2s; border-radius: 8px; }
         .btn-sm { padding: 8px 14px; border: none; font-weight: 600; font-size: 11px; cursor: pointer; transition: 0.2s; border-radius: 6px; }
         .btn-approve { background: #30d158; color: #000; }
@@ -100,6 +100,29 @@
         .status-submitted { color: #f39c12; font-weight: bold; }
         .loan-badge { background: #ff9f0a; color: #000; padding: 2px 8px; border-radius: 12px; font-size: 10px; margin-left: 8px; }
         .deposit-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #1a1a1a; margin-bottom: 8px; border-radius: 8px; }
+        .disabled-payment { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Bank Statement Styles */
+        .statement-container { background: white; color: #333; padding: 20px; border-radius: 12px; font-family: 'Courier New', monospace; }
+        .statement-header { text-align: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #333; }
+        .statement-header h2 { color: #2c3e50; margin-bottom: 5px; }
+        .statement-header p { color: #666; font-size: 12px; }
+        .statement-account-info { background: #f5f5f5; padding: 15px; margin-bottom: 20px; border-radius: 8px; display: flex; justify-content: space-between; flex-wrap: wrap; }
+        .statement-account-info div { font-size: 13px; }
+        .statement-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        .statement-table th { background: #2c3e50; color: white; padding: 10px; text-align: left; font-size: 12px; }
+        .statement-table td { padding: 8px 10px; border-bottom: 1px solid #ddd; font-size: 12px; }
+        .statement-table tr:hover { background: #f9f9f9; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .credit { color: #27ae60; font-weight: bold; }
+        .debit { color: #e74c3c; font-weight: bold; }
+        .statement-footer { margin-top: 20px; padding-top: 15px; border-top: 2px solid #333; text-align: center; font-size: 11px; color: #666; }
+        .statement-summary { background: #f0f0f0; padding: 15px; margin-top: 20px; border-radius: 8px; display: flex; justify-content: space-between; flex-wrap: wrap; }
+        .date-range-selector { background: #1a1f2e; padding: 15px; border-radius: 12px; margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+        .date-range-selector .form-group { margin-bottom: 0; flex: 1; min-width: 120px; }
+        .date-range-selector label { font-size: 10px; margin-bottom: 3px; }
+        .date-range-selector input { margin-bottom: 0; padding: 10px; }
     </style>
 </head>
 <body onload="initSystem()">
@@ -133,7 +156,7 @@
             <div class="action-grid">
                 <div class="action-item" onclick="showPaymentList()"><div class="action-icon">💸</div><span>Deposit</span></div>
                 <div class="action-item" onclick="openLoanRequestModal()"><div class="action-icon">⚖️</div><span>Loans</span></div>
-                <div class="action-item" onclick="showAccountSelectorForStatement()"><div class="action-icon">📂</div><span>Records</span></div>
+                <div class="action-item" onclick="showStatementGenerator()"><div class="action-icon">📊</div><span>Statement</span></div>
                 <div class="action-item" onclick="logoutUser()"><div class="action-icon">🚪</div><span>Exit</span></div>
             </div>
             <div id="statsGrid" class="stats-grid"></div>
@@ -149,13 +172,10 @@
         <div class="nav-tab" onclick="showProfileModal()"><i>👤</i>Profile</div>
     </div>
 
-    <!-- BLOCK-06: DRILLDOWN MODAL (Popup Window) -->
+    <!-- BLOCK-06: DRILLDOWN MODAL -->
     <div id="drilldownModal" class="drilldown-modal">
         <div class="drilldown-modal-content">
-            <div class="drilldown-modal-header">
-                <h3 id="drilldownModalTitle">Details</h3>
-                <button class="close-drilldown-modal" onclick="closeDrilldownModal()">✖ Close</button>
-            </div>
+            <div class="drilldown-modal-header"><h3 id="drilldownModalTitle">Details</h3><button class="close-drilldown-modal" onclick="closeDrilldownModal()">✖ Close</button></div>
             <div id="drilldownModalContent" class="drilldown-content"></div>
         </div>
     </div>
@@ -185,6 +205,27 @@
         function getMonthName(date) { var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; return months[date.getMonth()]; }
         function formatMonthYear(date) { return getMonthName(date) + '-' + date.getFullYear().toString().slice(-2); }
         function formatAmount(amount) { if (amount === undefined) amount = 0; var formatted = amount.toFixed(DB.conf.cur === 'BHD' ? 3 : 2); return DB.conf.cur + ' ' + formatted; }
+        function formatDateForDisplay(date) { var d = new Date(date); return d.toLocaleDateString('en-GB'); }
+        
+        // Get next due deposit month (sequential - find first unpaid month after account opening)
+        function getNextDueDepositMonth(accountOpenDate, paidDeposits) {
+            var openDate = new Date(accountOpenDate);
+            var today = new Date();
+            var currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            for (var m = 1; m <= 24; m++) {
+                var dueDate = new Date(openDate);
+                dueDate.setMonth(openDate.getMonth() + m);
+                var dueMonthStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), 1);
+                if (dueMonthStart > currentMonth) {
+                    var monthLabel = formatMonthYear(dueDate);
+                    var isPaid = paidDeposits.some(function(p) { return p.monthLabel === monthLabel; });
+                    if (!isPaid) {
+                        return { dueDate: dueDate, monthLabel: monthLabel, isPaid: false };
+                    }
+                }
+            }
+            return null;
+        }
         
         const firebaseConfig = { apiKey: "AIzaSyArosE5bJYiz8eGpGv5_IohwqBhLV4O7fY", authDomain: "al-amin-group.firebaseapp.com", projectId: "al-amin-group", storageBucket: "al-amin-group.firebasestorage.app", messagingSenderId: "1024609598951", appId: "1:1024609598951:web:852616423f8b253acc1142" };
         let firebaseApp = null, dbRef = null, isFirebaseConnected = false, isLocalUpdate = false;
@@ -195,17 +236,8 @@
         };
         var MASTER_PASSWORD = "123", currentSession = { loggedIn: false, userType: null, userId: null, userName: null, lastLogin: null }, currentMember = null, pendingPayments = [], backupIntervalId = null;
         
-        // Drilldown Modal functions (popup window)
-        function openDrilldownModal(title, content) {
-            document.getElementById('drilldownModalTitle').innerHTML = title;
-            document.getElementById('drilldownModalContent').innerHTML = content;
-            document.getElementById('drilldownModal').style.display = 'flex';
-        }
-        function closeDrilldownModal() {
-            document.getElementById('drilldownModal').style.display = 'none';
-            document.getElementById('drilldownModalContent').innerHTML = '';
-        }
-        
+        function openDrilldownModal(title, content) { document.getElementById('drilldownModalTitle').innerHTML = title; document.getElementById('drilldownModalContent').innerHTML = content; document.getElementById('drilldownModal').style.display = 'flex'; }
+        function closeDrilldownModal() { document.getElementById('drilldownModal').style.display = 'none'; document.getElementById('drilldownModalContent').innerHTML = ''; }
         function showNotification(msg, type) { var n = document.createElement('div'); n.className = 'notification' + (type === 'error' ? ' error' : ''); n.textContent = msg; document.body.appendChild(n); setTimeout(function() { if (n && n.remove) n.remove(); }, 4000); }
         function openModal(id) { var modal = document.getElementById(id); if (modal) modal.style.display = 'flex'; }
         function closeModal(id) { var modal = document.getElementById(id); if (modal) modal.style.display = 'none'; }
@@ -255,9 +287,9 @@
             DB.members.push({ id: member1Id, type: 'member', name: 'Fatima Ali', email: 'fatima@group.com', mobile: '97387654321', idc: 'ID002', leaderId: leaderId, regDate: now.toISOString(), regDateTime: now.toISOString(), pin: '4321', lastLogin: null }); 
             DB.savingsAccounts.push({ id: 'SAV1001', memberId: leaderId, memberName: 'Ahmed Hassan', openDate: now.toISOString().split('T')[0], openDateTime: now.toISOString(), balance: 50, status: 'active' }); 
             DB.savingsAccounts.push({ id: 'SAV1002', memberId: member1Id, memberName: 'Fatima Ali', openDate: now.toISOString().split('T')[0], openDateTime: now.toISOString(), balance: 30, status: 'active' }); 
-            DB.loans.push({ id: 'LOAN1001', memberId: member1Id, memberName: 'Fatima Ali', linkedSavingsId: 'SAV1002', amount: 100, paidAmount: 60, status: 'active', procFeePaid: true, approvalDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], approvalDateTime: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(), emiAmount: 10, totalEmis: 10, paidEmis: 6 }); 
+            DB.loans.push({ id: 'LOAN1001', memberId: member1Id, memberName: 'Fatima Ali', linkedSavingsId: 'SAV1002', amount: 100, paidAmount: 60, status: 'active', procFeePaid: true, approvalDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], approvalDateTime: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(), emiAmount: 10, totalEmis: 10, paidEmis: 6, nextEmiDue: 7 }); 
             for (var i = 0; i < 6; i++) { DB.loanTransactions.push({ id: 'LTXN' + Date.now() + i, loanId: 'LOAN1001', memberId: member1Id, type: 'emi', amount: 10, emiNumber: i+1, reference: 'EMI Payment', date: new Date(Date.now() - (i * 5) * 24 * 60 * 60 * 1000).toISOString(), dateTime: new Date(Date.now() - (i * 5) * 24 * 60 * 60 * 1000).toISOString() }); } 
-            DB.savingsTransactions.push({ id: 'STXN' + Date.now() + 100, savingsId: 'SAV1002', memberId: member1Id, type: 'dep', amount: 5, reference: 'Monthly Deposit', date: new Date().toISOString(), dateTime: new Date().toISOString() }); 
+            DB.savingsTransactions.push({ id: 'STXN' + Date.now() + 100, savingsId: 'SAV1002', memberId: member1Id, type: 'dep', amount: 5, reference: 'Monthly Deposit - Jan-26', date: new Date().toISOString(), dateTime: new Date().toISOString(), monthLabel: 'Jan-26' }); 
             saveDataToLocal(); 
         }
         
@@ -268,7 +300,6 @@
         function completeLogin() { document.getElementById('loginPanel').style.display = 'none'; document.getElementById('dashboardContainer').style.display = 'block'; document.getElementById('bottomNavBar').style.display = 'flex'; document.getElementById('welcomeUserName').innerHTML = "Welcome, " + currentSession.userName; currentMember = DB.members.find(function(m) { return m.id === currentSession.userId; }); loadDashboard(); showNotification('Welcome ' + currentSession.userName + '!'); }
         function logoutUser() { currentSession = { loggedIn: false, userType: null, userId: null, userName: null, lastLogin: null }; currentMember = null; document.getElementById('loginPanel').style.display = 'block'; document.getElementById('dashboardContainer').style.display = 'none'; var modals = document.querySelectorAll('.modal'); for (var i = 0; i < modals.length; i++) modals[i].style.display = 'none'; closeDrilldownModal(); showNotification('Logged out successfully'); }
         
-        // BLOCK-09: DASHBOARD LOADERS
         function loadDashboard() { var role = currentSession.userType; if (role === 'member') loadMemberDashboard(); else if (role === 'leader') loadLeaderDashboard(); else if (role === 'admin') loadAdminDashboard(); else if (role === 'it') loadITDashboard(); }
         
         function loadMemberDashboard() {
@@ -278,12 +309,10 @@
             for (var i = 0; i < savingsAccounts.length; i++) totalSavingsBalance += (savingsAccounts[i].balance || 0);
             document.getElementById('mainBalanceDisplay').innerHTML = formatAmount(totalSavingsBalance);
             
-            // Calculate Loan Due Amount
             var memberLoans = DB.loans.filter(function(l) { return l.memberId === currentMember.id && (l.status === 'active' || l.status === 'completed'); });
             var totalLoanDue = 0;
             for (var i = 0; i < memberLoans.length; i++) { var l = memberLoans[i]; var due = (l.amount || 0) - (l.paidAmount || 0); if (due > 0) totalLoanDue += due; }
             
-            // Display Loan Due in hero card
             var loanDueSpan = document.getElementById('loanDueDisplay');
             if (loanDueSpan) loanDueSpan.innerHTML = totalLoanDue > 0 ? '🏦 Loan Due: ' + formatAmount(totalLoanDue) : '🏦 No Active Loans';
             
@@ -328,7 +357,158 @@
             document.getElementById('buttonGrid').innerHTML += itBtns; 
         }
         
-        // BLOCK-10: DRILLDOWN FUNCTIONS (Open in Modal Popup)
+        // BLOCK-09: PROFESSIONAL BANK STATEMENT WITH DATE RANGE
+        function showStatementGenerator() {
+            var accounts = DB.savingsAccounts.filter(a => a.memberId === currentMember.id && a.status === 'active');
+            if (accounts.length === 0) { alert('No active savings accounts found.'); return; }
+            
+            // Set default date range (last 3 months to today)
+            var today = new Date();
+            var threeMonthsAgo = new Date();
+            threeMonthsAgo.setMonth(today.getMonth() - 3);
+            var defaultFromDate = threeMonthsAgo.toISOString().split('T')[0];
+            var defaultToDate = today.toISOString().split('T')[0];
+            
+            var html = '<div style="padding:10px;">';
+            html += '<div class="date-range-selector">';
+            html += '<div class="form-group"><label>Select Account</label><select id="statementAccountSelect" style="width:100%;">';
+            for (var i = 0; i < accounts.length; i++) {
+                html += '<option value="' + accounts[i].id + '">Account #' + accounts[i].id.slice(-6) + ' - Balance: ' + formatAmount(accounts[i].balance) + '</option>';
+            }
+            html += '</select></div>';
+            html += '<div class="form-group"><label>From Date</label><input type="date" id="fromDate" value="' + defaultFromDate + '"></div>';
+            html += '<div class="form-group"><label>To Date</label><input type="date" id="toDate" value="' + defaultToDate + '"></div>';
+            html += '<div class="form-group"><button class="btn-save" onclick="generateBankStatement()" style="margin-top:20px;">Generate Statement</button></div>';
+            html += '</div>';
+            html += '<div id="statementResult"></div>';
+            html += '</div>';
+            openDrilldownModal('📊 Bank Statement', html);
+        }
+        
+        function generateBankStatement() {
+            var accountId = document.getElementById('statementAccountSelect').value;
+            var fromDate = new Date(document.getElementById('fromDate').value);
+            var toDate = new Date(document.getElementById('toDate').value);
+            toDate.setHours(23, 59, 59, 999);
+            
+            var account = DB.savingsAccounts.find(a => a.id === accountId);
+            if (!account) return;
+            
+            var allTransactions = DB.savingsTransactions.filter(t => t.savingsId === accountId);
+            var member = DB.members.find(m => m.id === account.memberId);
+            
+            // Filter transactions by date range
+            var filteredTransactions = allTransactions.filter(function(t) {
+                var txDate = new Date(t.dateTime || t.date);
+                return txDate >= fromDate && txDate <= toDate;
+            });
+            filteredTransactions.sort(function(a, b) { return new Date(a.dateTime || a.date) - new Date(b.dateTime || b.date); });
+            
+            // Calculate running balance
+            var openingBalance = 0;
+            var transactionsBefore = allTransactions.filter(function(t) {
+                var txDate = new Date(t.dateTime || t.date);
+                return txDate < fromDate;
+            });
+            for (var i = 0; i < transactionsBefore.length; i++) {
+                var t = transactionsBefore[i];
+                if (t.type === 'dep') openingBalance += t.amount;
+                else if (t.type === 'wd') openingBalance -= t.amount;
+            }
+            
+            var closingBalance = openingBalance;
+            var totalCredit = 0;
+            var totalDebit = 0;
+            
+            var tableRows = '';
+            for (var i = 0; i < filteredTransactions.length; i++) {
+                var t = filteredTransactions[i];
+                var txDate = new Date(t.dateTime || t.date);
+                var description = '';
+                var amount = t.amount;
+                var isCredit = (t.type === 'dep');
+                
+                if (t.type === 'dep') {
+                    description = 'Deposit - ' + (t.monthLabel || 'Savings Deposit');
+                    totalCredit += amount;
+                    closingBalance += amount;
+                } else if (t.type === 'wd') {
+                    description = 'Withdrawal';
+                    totalDebit += amount;
+                    closingBalance -= amount;
+                } else if (t.type === 'reg') {
+                    description = 'Registration Fee (Company Account)';
+                    totalDebit += amount;
+                } else {
+                    description = t.type.toUpperCase();
+                    if (t.type === 'emi') totalDebit += amount;
+                    else if (t.type === 'proc') totalDebit += amount;
+                }
+                
+                tableRows += '<tr>';
+                tableRows += '<td>' + txDate.toLocaleDateString('en-GB') + '</td>';
+                tableRows += '<td>' + description + '</td>';
+                tableRows += '<td class="text-right">' + (isCredit ? formatAmount(amount) : '-') + '</td>';
+                tableRows += '<td class="text-right">' + (!isCredit && t.type !== 'reg' ? formatAmount(amount) : '-') + '</td>';
+                tableRows += '<td class="text-right">' + (t.type !== 'reg' ? formatAmount(closingBalance) : '-') + '</td>';
+                tableRows += '</tr>';
+            }
+            
+            var statementHtml = '<div class="statement-container" id="statementToPrint">';
+            statementHtml += '<div class="statement-header">';
+            statementHtml += '<h2>' + DB.conf.name + '</h2>';
+            statementHtml += '<p>' + DB.conf.addr + '</p>';
+            statementHtml += '<h3>SAVINGS ACCOUNT STATEMENT</h3>';
+            statementHtml += '</div>';
+            
+            statementHtml += '<div class="statement-account-info">';
+            statementHtml += '<div><strong>Account Number:</strong> #' + account.id.slice(-6) + '</div>';
+            statementHtml += '<div><strong>Account Holder:</strong> ' + (member ? member.name : account.memberName) + '</div>';
+            statementHtml += '<div><strong>Statement Period:</strong> ' + fromDate.toLocaleDateString('en-GB') + ' to ' + toDate.toLocaleDateString('en-GB') + '</div>';
+            statementHtml += '<div><strong>Opening Balance:</strong> ' + formatAmount(openingBalance) + '</div>';
+            statementHtml += '<div><strong>Closing Balance:</strong> ' + formatAmount(closingBalance) + '</div>';
+            statementHtml += '</div>';
+            
+            if (filteredTransactions.length === 0) {
+                statementHtml += '<div style="text-align:center; padding:40px;">No transactions found for the selected period.</div>';
+            } else {
+                statementHtml += '<table class="statement-table">';
+                statementHtml += '<thead><tr>';
+                statementHtml += '<th>Date</th><th>Description</th><th class="text-right">Credit (Deposit)</th><th class="text-right">Debit (Withdrawal)</th><th class="text-right">Balance</th>';
+                statementHtml += '</tr></thead><tbody>';
+                statementHtml += tableRows;
+                statementHtml += '</tbody></table>';
+                
+                statementHtml += '<div class="statement-summary">';
+                statementHtml += '<div><strong>Total Credits:</strong> ' + formatAmount(totalCredit) + '</div>';
+                statementHtml += '<div><strong>Total Debits:</strong> ' + formatAmount(totalDebit) + '</div>';
+                statementHtml += '<div><strong>Net Change:</strong> ' + formatAmount(totalCredit - totalDebit) + '</div>';
+                statementHtml += '</div>';
+            }
+            
+            statementHtml += '<div class="statement-footer">';
+            statementHtml += 'This is a computer-generated statement and does not require a signature.<br>';
+            statementHtml += 'Generated on: ' + new Date().toLocaleString() + ' | For inquiries, please contact your group leader.';
+            statementHtml += '</div>';
+            statementHtml += '<div style="margin-top:15px; text-align:center;">';
+            statementHtml += '<button class="btn-print" onclick="printStatement()">🖨️ Print Statement</button>';
+            statementHtml += '<button class="btn-cancel" style="margin-left:10px;" onclick="showStatementGenerator()">← Back</button>';
+            statementHtml += '</div>';
+            statementHtml += '</div>';
+            
+            document.getElementById('statementResult').innerHTML = statementHtml;
+        }
+        
+        function printStatement() {
+            var printContent = document.getElementById('statementToPrint');
+            var originalContent = document.body.innerHTML;
+            document.body.innerHTML = printContent.outerHTML;
+            window.print();
+            document.body.innerHTML = originalContent;
+            location.reload();
+        }
+        
+        // SAVINGS DRILLDOWN WITH SEQUENTIAL DEPOSITS
         function showSavingsAccountsDrilldown() { if (!currentMember) return; var accounts = DB.savingsAccounts.filter(a => a.memberId === currentMember.id && a.status === 'active'); var html = '<div style="padding:10px;">'; for (var i = 0; i < accounts.length; i++) { var a = accounts[i]; var hasActiveLoan = DB.loans.some(l => l.linkedSavingsId === a.id && l.status === 'active'); var regPaid = DB.savingsTransactions.some(t => t.savingsId === a.id && t.type === 'reg'); html += '<div class="item-card" onclick="showSavingsAccountStatement(\'' + a.id + '\')"><div><strong>Account #' + a.id.slice(-6) + '</strong><br><span style="color:#888;">Opened: ' + new Date(a.openDateTime||a.openDate).toLocaleDateString() + '</span>' + (hasActiveLoan ? '<br><span class="loan-badge">Active Loan Linked</span>' : '') + '<br><span style="font-size:11px;">Reg Fee: ' + (regPaid ? '<span class="status-paid">✓ Paid</span>' : '<span class="status-pending">⚠ Due</span>') + '</span></div><div style="color:#30d158;">' + formatAmount(a.balance) + '</div></div>'; } html += '</div>'; openDrilldownModal('💰 My Savings Accounts', html); }
         
         function showSavingsAccountStatement(accountId) { 
@@ -336,39 +516,50 @@
             var transactions = DB.savingsTransactions.filter(t=>t.savingsId===accountId).sort((a,b)=>new Date(b.dateTime||b.date)-new Date(a.dateTime||a.date)); 
             var totalDeposit = transactions.filter(t=>t.type==='dep').reduce((s,t)=>s+(t.amount||0),0); 
             var totalWithdrawal = transactions.filter(t=>t.type==='wd').reduce((s,t)=>s+(t.amount||0),0); 
-            var regFeePaid = transactions.some(t=>t.type==='reg'); 
+            var regFeePaid = transactions.some(t=>t.type==='reg');
+            
+            var paidDeposits = transactions.filter(t=>t.type==='dep').map(function(t) { return { monthLabel: t.monthLabel, transaction: t }; });
             var accountOpenDate = new Date(account.openDateTime || account.openDate);
-            var today = new Date();
-            var monthsToShow = 6;
-            var depositsFound = 0;
-            var existingDeposits = DB.savingsTransactions.filter(t => t.savingsId === account.id && t.type === 'dep');
-            var depositScheduleHtml = '<div style="margin-top:15px;"><strong style="color:white;">📅 Deposit Schedule</strong></div><div style="background: #1a1f2e; padding: 15px; margin-bottom: 15px; border-radius: 8px;">';
-            for (var m = 1; m <= monthsToShow; m++) {
-                var dueDate = new Date(accountOpenDate);
-                dueDate.setMonth(accountOpenDate.getMonth() + m);
-                if (dueDate > today) {
-                    var monthLabel = formatMonthYear(dueDate);
-                    var isPaid = existingDeposits.some(function(d){ var dDate = new Date(d.dateTime || d.date); return dDate.getMonth() === dueDate.getMonth() && dDate.getFullYear() === dueDate.getFullYear(); });
-                    var paidTransaction = isPaid ? existingDeposits.find(function(d){ var dDate = new Date(d.dateTime || d.date); return dDate.getMonth() === dueDate.getMonth() && dDate.getFullYear() === dueDate.getFullYear(); }) : null;
-                    var isSubmitted = pendingPayments.some(p => p.savingsId === account.id && p.type === 'dep' && p.dueMonth === monthLabel && p.status === 'pending');
-                    depositScheduleHtml += '<div class="transaction-item" style="margin-bottom: 8px;"><div><strong>' + monthLabel + '</strong><br><small>Monthly Deposit</small></div><div>' + formatAmount(DB.conf.dep);
-                    if (isPaid && paidTransaction) { depositScheduleHtml += ' <span class="status-paid">✓ PAID</span> <button onclick="showReceipt(\'' + paidTransaction.id + '\', \'savings\')" class="receipt-btn" style="margin-left:8px;">📄 Receipt</button>'; }
-                    else if (isSubmitted) { depositScheduleHtml += ' <span class="status-submitted">⏳ SUBMITTED</span>'; }
-                    else { depositScheduleHtml += ' <button onclick="submitDepositPaymentSchedule(\'' + account.id + '\', \'' + monthLabel + '\')" class="btn-pay" style="margin-left:8px;">Pay Now</button>'; }
-                    depositScheduleHtml += '</div></div>';
-                    depositsFound++;
+            var depositScheduleHtml = '<div style="margin-top:15px;"><strong style="color:white;">📅 Deposit Schedule (Sequential)</strong></div><div style="background: #1a1f2e; padding: 15px; margin-bottom: 15px; border-radius: 8px;">';
+            var nextDue = getNextDueDepositMonth(accountOpenDate, paidDeposits);
+            
+            if (!regFeePaid) {
+                depositScheduleHtml += '<div class="transaction-item" style="background: rgba(231,76,60,0.2);"><div><strong>⚠️ Registration Fee Required</strong><br><small>Pay registration fee first to start deposits</small></div><div><button onclick="submitRegFeePayment(\''+account.id+'\')" class="btn-pay">Pay Registration Fee ' + formatAmount(DB.conf.reg) + '</button></div></div>';
+            } else if (nextDue) {
+                var isSubmitted = pendingPayments.some(p => p.savingsId === account.id && p.type === 'dep' && p.dueMonth === nextDue.monthLabel && p.status === 'pending');
+                depositScheduleHtml += '<div class="transaction-item" style="margin-bottom: 8px;"><div><strong>' + nextDue.monthLabel + '</strong><br><small>Next Due Monthly Deposit</small></div><div>' + formatAmount(DB.conf.dep);
+                if (isSubmitted) { depositScheduleHtml += ' <span class="status-submitted">⏳ SUBMITTED</span>'; }
+                else { depositScheduleHtml += ' <button onclick="submitSequentialDepositPayment(\'' + account.id + '\', \'' + nextDue.monthLabel + '\')" class="btn-pay" style="margin-left:8px;">Pay Now</button>'; }
+                depositScheduleHtml += '</div></div>';
+                
+                var tempDate = new Date(nextDue.dueDate);
+                for (var f = 1; f <= 5; f++) {
+                    tempDate.setMonth(tempDate.getMonth() + 1);
+                    var futureMonthLabel = formatMonthYear(tempDate);
+                    depositScheduleHtml += '<div class="transaction-item disabled-payment" style="opacity:0.5;"><div><strong>' + futureMonthLabel + '</strong><br><small>Locked - Pay ' + nextDue.monthLabel + ' first</small></div><div>' + formatAmount(DB.conf.dep) + ' <span style="color:#888;">(Locked)</span></div></div>';
+                }
+            } else {
+                depositScheduleHtml += '<div style="padding:10px; text-align:center; color:#2ecc71;">✅ All deposits are up to date!</div>';
+            }
+            depositScheduleHtml += '</div>';
+            
+            var paidDepositsHtml = '';
+            if (paidDeposits.length > 0) {
+                paidDepositsHtml = '<div style="margin-top:15px;"><strong style="color:white;">📋 Paid Deposits History</strong></div>';
+                for (var i = 0; i < paidDeposits.length; i++) {
+                    var pd = paidDeposits[i];
+                    paidDepositsHtml += '<div class="transaction-item"><div><strong>' + pd.monthLabel + '</strong><br><small>Monthly Deposit</small></div><div><span class="status-paid">✓ PAID</span> ' + formatAmount(DB.conf.dep) + ' <button onclick="showReceipt(\'' + pd.transaction.id + '\', \'savings\')" class="receipt-btn">📄 Receipt</button></div></div>';
                 }
             }
-            if (depositsFound === 0) depositScheduleHtml += '<div style="padding:10px; text-align:center; color:#888;">All deposits are up to date!</div>';
-            depositScheduleHtml += '</div>';
-            var html = '<div style="margin-top:15px; background:#1a1f2e; padding:20px; border-radius:8px;"><div><strong>Savings Account #' + account.id.slice(-6) + '</strong><br>Balance: ' + formatAmount(account.balance) + '</div><div>Total Deposits: ' + formatAmount(totalDeposit) + ' | Withdrawals: ' + formatAmount(totalWithdrawal) + '</div><div>Registration Fee: ' + (regFeePaid ? '<span class="status-paid">✓ PAID</span>' : '<span class="status-pending">⚠ NOT PAID <button onclick="submitRegFeePayment(\''+account.id+'\')" class="btn-pay" style="margin-left:10px;">Pay Now</button></span>') + '</div>' + depositScheduleHtml + '<br><strong>📋 Transaction History (Savings Only)</strong>';
-            if(transactions.length===0){ html += '<div style="text-align:center; padding:20px; color:#888;">No savings transactions</div>'; } 
-            else { for(var i=0;i<Math.min(transactions.length,20);i++){ var t=transactions[i]; var typeName = t.type==='dep'?'Deposit':(t.type==='wd'?'Withdrawal':'Registration Fee'); var amountColor = t.type==='dep'?'#2ecc71':'#ff6b6b'; var sign = t.type==='dep'?'+':'-'; html += '<div class="transaction-item"><div><span style="color:white;">' + typeName + '</span><br><small>' + new Date(t.dateTime||t.date).toLocaleDateString() + '</small></div><div style="color:'+amountColor+'; font-weight:bold;">' + sign + ' ' + formatAmount(t.amount) + '</div><button onclick="showReceipt(\'' + t.id + '\', \'savings\')" class="receipt-btn">📄 Receipt</button></div>'; } } 
+            
+            var html = '<div style="margin-top:15px; background:#1a1f2e; padding:20px; border-radius:8px;"><div><strong>Savings Account #' + account.id.slice(-6) + '</strong><br>Balance: ' + formatAmount(account.balance) + '</div><div>Total Deposits: ' + formatAmount(totalDeposit) + ' | Withdrawals: ' + formatAmount(totalWithdrawal) + '</div><div>Registration Fee: ' + (regFeePaid ? '<span class="status-paid">✓ PAID</span>' : '<span class="status-pending">⚠ NOT PAID</span>') + '</div>' + depositScheduleHtml + paidDepositsHtml + '<br><strong>📋 All Transactions</strong>';
+            if(transactions.length===0){ html += '<div style="text-align:center; padding:20px; color:#888;">No transactions</div>'; } 
+            else { for(var i=0;i<Math.min(transactions.length,20);i++){ var t=transactions[i]; var typeName = t.type==='dep'?'Deposit':(t.type==='wd'?'Withdrawal':'Registration Fee'); var amountColor = t.type==='dep'?'#2ecc71':'#ff6b6b'; var sign = t.type==='dep'?'+':'-'; html += '<div class="transaction-item"><div><span style="color:white;">' + typeName + '</span><br><small>' + new Date(t.dateTime||t.date).toLocaleDateString() + '</small>' + (t.monthLabel ? '<br><small>' + t.monthLabel + '</small>' : '') + '</div><div style="color:'+amountColor+'; font-weight:bold;">' + sign + ' ' + formatAmount(t.amount) + '</div><button onclick="showReceipt(\'' + t.id + '\', \'savings\')" class="receipt-btn">📄 Receipt</button></div>'; } } 
             html += '<button class="btn-cancel" style="margin-top:15px;" onclick="showSavingsAccountsDrilldown()">← Back</button></div>'; 
             openDrilldownModal('📄 Savings Statement', html); 
         }
         
-        function submitDepositPaymentSchedule(savingsId, dueMonth) { 
+        function submitSequentialDepositPayment(savingsId, dueMonth) { 
             if(pendingPayments.some(p=>p.memberId===currentMember.id && p.status==='pending')){ alert('You already have a pending payment.'); return; } 
             pendingPayments.push({ id:'PAY'+Date.now(), memberId:currentMember.id, memberName:currentMember.name, savingsId: savingsId, type: 'dep', amount: DB.conf.dep, description: 'Deposit - ' + dueMonth, dueMonth: dueMonth, requestDate:new Date().toISOString(), status:'pending' }); 
             localStorage.setItem('SHG_PENDING_PAYMENTS',JSON.stringify(pendingPayments)); 
@@ -388,31 +579,138 @@
             showSavingsAccountsDrilldown(); 
         }
         
+        // LOANS DRILLDOWN WITH SEQUENTIAL EMI
         function showLoansDrilldown() { if (!currentMember) return; var loans = DB.loans.filter(l => l.memberId === currentMember.id); var html = '<div style="padding:10px;">'; for (var i = 0; i < loans.length; i++) { var l = loans[i]; var due = (l.amount || 0) - (l.paidAmount || 0); var statusText = l.status === 'completed' ? '✅ CLOSED' : (due <= 0 ? '✅ PAID' : 'Active'); var linkedAccount = DB.savingsAccounts.find(a => a.id === l.linkedSavingsId); html += '<div class="item-card" onclick="showLoanDetails(\'' + l.id + '\')"><div><strong>Loan #' + l.id.slice(-6) + '</strong><br>Due: ' + formatAmount(due) + '<br><small>' + statusText + '</small><br><small style="color:#888;">Linked: #' + (linkedAccount ? linkedAccount.id.slice(-6) : 'N/A') + '</small></div><div>'+(l.procFeePaid ? '<span class="fee-badge fee-paid">✓ Proc Paid</span>' : '<span class="fee-badge fee-unpaid">⚠ Proc Due</span>')+'</div></div>'; } if(loans.length===0) html += '<div style="text-align:center;padding:40px; color:#888;">No loans found.<br><button class="btn-save" style="margin-top:15px;" onclick="openLoanRequestModal()">Apply for Loan</button></div>'; html += '</div>'; openDrilldownModal('📋 My Loans', html); }
         
-        function showLoanDetails(loanId) { var loan = DB.loans.find(l => l.id === loanId); if (!loan) return; var emiAmount = loan.emiAmount || DB.conf.emi; var totalEmis = loan.totalEmis || Math.ceil(loan.amount / emiAmount); var paidEmis = loan.paidEmis || Math.floor((loan.paidAmount || 0) / emiAmount); var due = (loan.amount || 0) - (loan.paidAmount || 0); var isClosed = due <= 0 || loan.status === 'completed'; var procFeePaid = loan.procFeePaid || false; var approvalDate = new Date(loan.approvalDateTime || loan.approvalDate); var linkedAccount = DB.savingsAccounts.find(a => a.id === loan.linkedSavingsId); var html = '<div style="padding: 10px;"><div style="background: linear-gradient(135deg, #2c3e50 0%, #e67e22 100%); color:white; padding: 15px; margin-bottom: 15px; border-radius: 8px;"><div style="font-size: 18px; font-weight: bold;">📋 Loan #' + loan.id.slice(-6) + (isClosed ? ' ✅ CLOSED' : '') + '</div><div>💰 Total: ' + formatAmount(loan.amount) + ' | EMI: ' + formatAmount(emiAmount) + '</div><div>✅ EMIs Paid: ' + paidEmis + ' / ' + totalEmis + '</div><div>⚙️ Processing Fee: ' + (procFeePaid ? '✓ PAID' : '❌ NOT PAID') + '</div><div>🏦 Linked Savings: #' + (linkedAccount ? linkedAccount.id.slice(-6) : 'N/A') + '</div>' + (!isClosed ? '<div>⚠️ Remaining Due: <strong style="font-size: 20px;">' + formatAmount(due) + '</strong></div>' : '') + '</div>';
-            if (!procFeePaid && loan.status === 'active' && !isClosed) { var existingProcReq = pendingPayments.some(p => p.loanId === loanId && p.type === 'proc' && p.status === 'pending'); html += '<div class="transaction-item" style="background: rgba(243,156,18,0.2); margin-bottom: 15px;"><div><strong>⚙️ Step 1: Loan Processing Fee</strong><br><small>Required before EMI payments</small></div><div>' + formatAmount(DB.conf.proc) + (existingProcReq ? '<span class="btn-submitted" style="margin-left:10px;">⏳ SUBMITTED</span>' : '<button onclick="submitProcessingFeePayment(\'' + loanId + '\')" class="btn-pay" style="margin-left:10px;">Pay Fee</button>') + '</div></div>'; } else if (procFeePaid) { html += '<div class="transaction-item" style="background: rgba(46,204,113,0.1); margin-bottom: 15px;"><div><strong>✓ Step 1: Loan Processing Fee</strong><br><small>Paid</small></div><div><span class="status-paid">PAID ' + formatAmount(DB.conf.proc) + '</span></div></div>'; } else if (loan.status === 'pending') { html += '<div class="transaction-item" style="background: rgba(243,156,18,0.1); margin-bottom: 15px;"><div><strong>⏳ Loan Pending Approval</strong><br><small>Processing fee will be available after loan approval</small></div><div><span class="status-submitted">Waiting for Admin</span></div></div>'; }
-            if (procFeePaid && !isClosed && loan.status === 'active') { html += '<div style="margin-top: 15px;"><strong>📅 EMI Repayment Schedule</strong></div><div style="background: #1a1f2e; padding: 15px; margin-bottom: 15px; border-radius: 8px;">'; var paidEmiTransactions = DB.loanTransactions.filter(t => t.loanId === loanId && t.type === 'emi'); var paidEmiNumbers = paidEmiTransactions.map(t => t.emiNumber); for (var emiNum = 1; emiNum <= totalEmis; emiNum++) { var isPaid = paidEmiNumbers.includes(emiNum) || (loan.paidEmis >= emiNum); var isSubmitted = pendingPayments.some(p => p.loanId === loanId && p.type === 'emi' && p.emiNumber === emiNum && p.status === 'pending'); var dueDate = new Date(approvalDate); dueDate.setMonth(approvalDate.getMonth() + emiNum); var transactionRecord = paidEmiTransactions.find(t => t.emiNumber === emiNum); html += '<div class="transaction-item" style="margin-bottom: 8px;"><div><strong>EMI #' + emiNum + '</strong><br><small>Due: ' + dueDate.toLocaleDateString() + '</small></div><div>' + formatAmount(emiAmount); if (isPaid) { html += ' <span class="status-paid">✓ PAID</span>'; if (transactionRecord) { html += ' <button onclick="showReceipt(\'' + transactionRecord.id + '\', \'loan\')" class="receipt-btn">📄 Receipt</button>'; } } else if (isSubmitted) { html += ' <span class="status-submitted">⏳ SUBMITTED</span>'; } else { html += ' <button onclick="submitEMIPayment(\'' + loanId + '\', ' + emiAmount + ', ' + emiNum + ')" class="btn-pay">Pay Now</button>'; } html += '</div></div>'; } html += '</div>'; } else if (!procFeePaid && !isClosed && loan.status === 'active') { html += '<div style="background: rgba(243,156,18,0.1); padding: 15px; text-align: center; margin-bottom: 15px; border-radius: 8px;">⚠️ Please pay the Loan Processing Fee first to view EMI schedule.</div>'; }
-            var allLoanTransactions = DB.loanTransactions.filter(t => t.loanId === loanId); if (allLoanTransactions.length > 0) { html += '<div><strong>📋 Loan Payment History</strong></div>'; for (var i = 0; i < allLoanTransactions.length; i++) { var t = allLoanTransactions[i]; var transDateTime = new Date(t.dateTime || t.date); var label = t.type === 'proc' ? 'Processing Fee' : 'EMI #' + t.emiNumber; html += '<div class="transaction-item"><div><span>' + label + '</span><br><small>' + transDateTime.toLocaleDateString() + '</small></div><div>' + formatAmount(t.amount) + ' <button onclick="showReceipt(\'' + t.id + '\', \'loan\')" class="receipt-btn">📄 Receipt</button></div></div>'; } } html += '<button class="btn-cancel" style="margin-top:15px;" onclick="showLoansDrilldown()">← Back to Loans</button></div>'; openDrilldownModal('📅 Loan Details', html); }
+        function showLoanDetails(loanId) { 
+            var loan = DB.loans.find(l => l.id === loanId); 
+            if (!loan) return; 
+            var emiAmount = loan.emiAmount || DB.conf.emi; 
+            var totalEmis = loan.totalEmis || Math.ceil(loan.amount / emiAmount); 
+            var paidEmis = loan.paidEmis || Math.floor((loan.paidAmount || 0) / emiAmount); 
+            var due = (loan.amount || 0) - (loan.paidAmount || 0); 
+            var isClosed = due <= 0 || loan.status === 'completed'; 
+            var procFeePaid = loan.procFeePaid || false; 
+            var nextEmiDue = (loan.nextEmiDue) || (paidEmis + 1);
+            var approvalDate = new Date(loan.approvalDateTime || loan.approvalDate);
+            var linkedAccount = DB.savingsAccounts.find(a => a.id === loan.linkedSavingsId);
+            
+            var html = '<div style="padding: 10px;"><div style="background: linear-gradient(135deg, #2c3e50 0%, #e67e22 100%); color:white; padding: 15px; margin-bottom: 15px; border-radius: 8px;"><div style="font-size: 18px; font-weight: bold;">📋 Loan #' + loan.id.slice(-6) + (isClosed ? ' ✅ CLOSED' : '') + '</div><div>💰 Total: ' + formatAmount(loan.amount) + ' | EMI: ' + formatAmount(emiAmount) + '</div><div>✅ EMIs Paid: ' + paidEmis + ' / ' + totalEmis + '</div><div>⚙️ Processing Fee: ' + (procFeePaid ? '✓ PAID' : '❌ NOT PAID') + '</div><div>🏦 Linked Savings: #' + (linkedAccount ? linkedAccount.id.slice(-6) : 'N/A') + '</div>' + (!isClosed ? '<div>⚠️ Remaining Due: <strong style="font-size: 20px;">' + formatAmount(due) + '</strong></div>' : '') + '</div>';
+            
+            if (!procFeePaid && loan.status === 'active' && !isClosed) { 
+                var existingProcReq = pendingPayments.some(p => p.loanId === loanId && p.type === 'proc' && p.status === 'pending'); 
+                html += '<div class="transaction-item" style="background: rgba(243,156,18,0.2); margin-bottom: 15px;"><div><strong>⚙️ Step 1: Loan Processing Fee (Required First)</strong><br><small>Must be paid before any EMI</small></div><div>' + formatAmount(DB.conf.proc) + (existingProcReq ? '<span class="btn-submitted" style="margin-left:10px;">⏳ SUBMITTED</span>' : '<button onclick="submitProcessingFeePayment(\'' + loanId + '\')" class="btn-pay" style="margin-left:10px;">Pay Fee</button>') + '</div></div>'; 
+            } else if (procFeePaid) { 
+                html += '<div class="transaction-item" style="background: rgba(46,204,113,0.1); margin-bottom: 15px;"><div><strong>✓ Step 1: Loan Processing Fee</strong><br><small>Paid</small></div><div><span class="status-paid">PAID ' + formatAmount(DB.conf.proc) + '</span></div></div>'; 
+            } else if (loan.status === 'pending') { 
+                html += '<div class="transaction-item" style="background: rgba(243,156,18,0.1); margin-bottom: 15px;"><div><strong>⏳ Loan Pending Approval</strong><br><small>Processing fee will be available after loan approval</small></div><div><span class="status-submitted">Waiting for Admin</span></div></div>'; 
+            }
+            
+            if (procFeePaid && !isClosed && loan.status === 'active') { 
+                html += '<div style="margin-top: 15px;"><strong>📅 EMI Repayment Schedule (Sequential)</strong></div><div style="background: #1a1f2e; padding: 15px; margin-bottom: 15px; border-radius: 8px;">';
+                var paidEmiNumbers = DB.loanTransactions.filter(t => t.loanId === loanId && t.type === 'emi').map(t => t.emiNumber);
+                var nextEmi = nextEmiDue;
+                
+                if (nextEmi <= totalEmis) {
+                    var isSubmitted = pendingPayments.some(p => p.loanId === loanId && p.type === 'emi' && p.emiNumber === nextEmi && p.status === 'pending');
+                    var dueDate = new Date(approvalDate);
+                    dueDate.setMonth(approvalDate.getMonth() + nextEmi);
+                    html += '<div class="transaction-item" style="margin-bottom: 8px; background: rgba(255,159,10,0.1);"><div><strong>EMI #' + nextEmi + ' (Next Due)</strong><br><small>Due: ' + dueDate.toLocaleDateString() + '</small></div><div>' + formatAmount(emiAmount);
+                    if (isSubmitted) { html += ' <span class="status-submitted">⏳ SUBMITTED</span>'; }
+                    else { html += ' <button onclick="submitSequentialEMIPayment(\'' + loanId + '\', ' + emiAmount + ', ' + nextEmi + ')" class="btn-pay" style="margin-left:8px;">Pay Now</button>'; }
+                    html += '</div></div>';
+                    
+                    for (var f = nextEmi + 1; f <= Math.min(nextEmi + 5, totalEmis); f++) {
+                        var futureDueDate = new Date(approvalDate);
+                        futureDueDate.setMonth(approvalDate.getMonth() + f);
+                        html += '<div class="transaction-item disabled-payment" style="opacity:0.5;"><div><strong>EMI #' + f + '</strong><br><small>Due: ' + futureDueDate.toLocaleDateString() + '</small></div><div>' + formatAmount(emiAmount) + ' <span style="color:#888;">(Locked - Pay EMI #' + nextEmi + ' first)</span></div></div>';
+                    }
+                } else {
+                    html += '<div style="padding:10px; text-align:center; color:#2ecc71;">✅ All EMIs have been paid!</div>';
+                }
+                html += '</div>';
+            } else if (!procFeePaid && !isClosed && loan.status === 'active') { 
+                html += '<div style="background: rgba(243,156,18,0.1); padding: 15px; text-align: center; margin-bottom: 15px; border-radius: 8px;">⚠️ Please pay the Loan Processing Fee first to view EMI schedule.</div>'; 
+            }
+            
+            var allLoanTransactions = DB.loanTransactions.filter(t => t.loanId === loanId);
+            if (allLoanTransactions.length > 0) { 
+                html += '<div><strong>📋 Loan Payment History</strong></div>'; 
+                for (var i = 0; i < allLoanTransactions.length; i++) { 
+                    var t = allLoanTransactions[i]; 
+                    var transDateTime = new Date(t.dateTime || t.date); 
+                    var label = t.type === 'proc' ? 'Processing Fee' : 'EMI #' + t.emiNumber; 
+                    html += '<div class="transaction-item"><div><span>' + label + '</span><br><small>' + transDateTime.toLocaleDateString() + '</small></div><div>' + formatAmount(t.amount) + ' <button onclick="showReceipt(\'' + t.id + '\', \'loan\')" class="receipt-btn">📄 Receipt</button></div></div>'; 
+                } 
+            } 
+            html += '<button class="btn-cancel" style="margin-top:15px;" onclick="showLoansDrilldown()">← Back to Loans</button></div>'; 
+            openDrilldownModal('📅 Loan Details', html); 
+        }
         
-        function submitProcessingFeePayment(loanId) { var loan = DB.loans.find(l => l.id === loanId); if (!loan) return; if (loan.procFeePaid) { alert('Processing fee already paid!'); showLoanDetails(loanId); return; } if (pendingPayments.some(p => p.memberId === currentMember.id && p.status === 'pending')) { alert('You already have a pending payment.'); return; } pendingPayments.push({ id:'PAY'+Date.now(), memberId:currentMember.id, memberName:currentMember.name, linkedSavingsId: loan.linkedSavingsId, loanId: loanId, type: 'proc', amount: DB.conf.proc, description: 'Loan Processing Fee', requestDate:new Date().toISOString(), status:'pending' }); localStorage.setItem('SHG_PENDING_PAYMENTS',JSON.stringify(pendingPayments)); saveDataToLocal(); showNotification('✅ Processing Fee request submitted!', 'alert'); showLoanDetails(loanId); }
-        function submitEMIPayment(loanId, amount, emiNumber) { var loan = DB.loans.find(l => l.id === loanId); if (!loan) return; if (!loan.procFeePaid) { alert('Please pay the Loan Processing Fee first!'); showLoanDetails(loanId); return; } if (pendingPayments.some(p => p.memberId === currentMember.id && p.status === 'pending')) { alert('You already have a pending payment.'); return; } var alreadyPaid = DB.loanTransactions.some(t => t.loanId === loanId && t.type === 'emi' && t.emiNumber === emiNumber); if (alreadyPaid) { alert('EMI #' + emiNumber + ' is already paid!'); showLoanDetails(loanId); return; } pendingPayments.push({ id:'PAY'+Date.now(), memberId:currentMember.id, memberName:currentMember.name, linkedSavingsId: loan.linkedSavingsId, loanId: loanId, type: 'emi', amount: amount, emiNumber: emiNumber, description: 'EMI #' + emiNumber, requestDate:new Date().toISOString(), status:'pending' }); localStorage.setItem('SHG_PENDING_PAYMENTS',JSON.stringify(pendingPayments)); saveDataToLocal(); showNotification('✅ EMI #' + emiNumber + ' request submitted!', 'alert'); showLoanDetails(loanId); }
+        function submitSequentialEMIPayment(loanId, amount, emiNumber) { 
+            var loan = DB.loans.find(l => l.id === loanId); 
+            if (!loan) return; 
+            if (!loan.procFeePaid) { alert('Please pay the Loan Processing Fee first!'); showLoanDetails(loanId); return; } 
+            if (pendingPayments.some(p => p.memberId === currentMember.id && p.status === 'pending')) { alert('You already have a pending payment.'); return; } 
+            var alreadyPaid = DB.loanTransactions.some(t => t.loanId === loanId && t.type === 'emi' && t.emiNumber === emiNumber); 
+            if (alreadyPaid) { alert('EMI #' + emiNumber + ' is already paid!'); showLoanDetails(loanId); return; } 
+            pendingPayments.push({ id:'PAY'+Date.now(), memberId:currentMember.id, memberName:currentMember.name, linkedSavingsId: loan.linkedSavingsId, loanId: loanId, type: 'emi', amount: amount, emiNumber: emiNumber, description: 'EMI #' + emiNumber, requestDate:new Date().toISOString(), status:'pending' }); 
+            localStorage.setItem('SHG_PENDING_PAYMENTS',JSON.stringify(pendingPayments)); 
+            saveDataToLocal(); 
+            showNotification('✅ EMI #' + emiNumber + ' request submitted!', 'alert'); 
+            showLoanDetails(loanId); 
+        }
         
-        // BLOCK-11: PAYMENT LIST
-        function showPaymentList() { var accounts = DB.savingsAccounts.filter(a => a.memberId === currentMember.id && a.status === 'active'); if(accounts.length===0){ alert('No active savings accounts found.'); return; } var html = '<div style="padding:10px;">'; for(var i=0;i<accounts.length;i++){ var account = accounts[i]; var regPaid = DB.savingsTransactions.some(t => t.savingsId === account.id && t.type === 'reg'); var accountOpenDate = new Date(account.openDateTime || account.openDate); var today = new Date(); var monthsToShow = 6; var depositsFound = 0; var existingDeposits = DB.savingsTransactions.filter(t => t.savingsId === account.id && t.type === 'dep'); html += '<div style="background:#1a1f2e; border:1px solid rgba(46,204,113,0.3); margin-bottom:20px; padding:15px; border-radius:8px;"><div style="font-weight:bold; color:#2ecc71;">🏦 Savings Account #'+account.id.slice(-6)+'</div><div>Balance: '+formatAmount(account.balance)+'</div>'; if(!regPaid){ html += '<button onclick="submitRegFeePayment(\''+account.id+'\')" class="btn-save" style="margin-top:10px; background:#ff9f0a;">Pay Registration Fee '+formatAmount(DB.conf.reg)+'</button>'; } html += '<div style="margin-top:15px;"><strong>📅 Monthly Deposit Schedule</strong></div>'; for(var m=1; m<=monthsToShow; m++){ var dueDate = new Date(accountOpenDate); dueDate.setMonth(accountOpenDate.getMonth() + m); if(dueDate > today){ var monthLabel = formatMonthYear(dueDate); var isPaid = existingDeposits.some(function(d){ var dDate = new Date(d.dateTime || d.date); return dDate.getMonth() === dueDate.getMonth() && dDate.getFullYear() === dueDate.getFullYear(); }); var paidTransaction = isPaid ? existingDeposits.find(function(d){ var dDate = new Date(d.dateTime || d.date); return dDate.getMonth() === dueDate.getMonth() && dDate.getFullYear() === dueDate.getFullYear(); }) : null; if(!isPaid && depositsFound < monthsToShow){ var pendingReq = pendingPayments.some(p => p.savingsId === account.id && p.type === 'dep' && p.dueMonth === monthLabel && p.status === 'pending'); html += '<div class="deposit-item"><div>' + monthLabel + '</div><div>' + formatAmount(DB.conf.dep) + (pendingReq ? '<span class="btn-submitted" style="margin-left:10px;">⏳ SUBMITTED</span>' : '<button onclick="submitDepositPayment(\''+account.id+'\',\''+monthLabel+'\')" class="btn-pay" style="margin-left:10px;">Pay</button>') + '</div></div>'; depositsFound++; } else if(isPaid && paidTransaction){ html += '<div class="deposit-item"><div>' + monthLabel + '</div><div><span class="status-paid">✓ PAID</span> ' + formatAmount(DB.conf.dep) + ' <button onclick="showReceipt(\''+paidTransaction.id+'\', \'savings\')" class="receipt-btn" style="margin-left:8px;">📄 Receipt</button></div></div>'; } } } if(depositsFound===0 && m>1) html += '<div style="padding:10px; text-align:center; color:#888;">All deposits are up to date!</div>'; html += '</div>'; } html += '</div>'; openDrilldownModal('💰 Payment List', html); }
+        function submitProcessingFeePayment(loanId) { 
+            var loan = DB.loans.find(l => l.id === loanId); 
+            if (!loan) return; 
+            if (loan.procFeePaid) { alert('Processing fee already paid!'); showLoanDetails(loanId); return; } 
+            if (pendingPayments.some(p => p.memberId === currentMember.id && p.status === 'pending')) { alert('You already have a pending payment.'); return; } 
+            pendingPayments.push({ id:'PAY'+Date.now(), memberId:currentMember.id, memberName:currentMember.name, linkedSavingsId: loan.linkedSavingsId, loanId: loanId, type: 'proc', amount: DB.conf.proc, description: 'Loan Processing Fee', requestDate:new Date().toISOString(), status:'pending' }); 
+            localStorage.setItem('SHG_PENDING_PAYMENTS',JSON.stringify(pendingPayments)); 
+            saveDataToLocal(); 
+            showNotification('✅ Processing Fee request submitted!', 'alert'); 
+            showLoanDetails(loanId); 
+        }
         
-        function submitDepositPayment(savingsId, dueMonth) { if(pendingPayments.some(p=>p.memberId===currentMember.id && p.status==='pending')){ alert('You already have a pending payment.'); return; } pendingPayments.push({ id:'PAY'+Date.now(), memberId:currentMember.id, memberName:currentMember.name, savingsId: savingsId, type: 'dep', amount: DB.conf.dep, description: 'Deposit - ' + dueMonth, dueMonth: dueMonth, requestDate:new Date().toISOString(), status:'pending' }); localStorage.setItem('SHG_PENDING_PAYMENTS',JSON.stringify(pendingPayments)); saveDataToLocal(); showNotification('✅ Deposit request submitted for ' + dueMonth + '!', 'alert'); showPaymentList(); }
+        // APPROVE PAYMENT
+        function approvePayment(paymentId) { 
+            var payment = pendingPayments.find(p => p.id === paymentId); 
+            if (payment && payment.status === 'pending') { 
+                payment.status = 'approved'; 
+                if (payment.type === 'dep' || payment.type === 'reg') { 
+                    var savingsAccount = DB.savingsAccounts.find(a => a.id === payment.savingsId); 
+                    if (savingsAccount && payment.type === 'dep') savingsAccount.balance += payment.amount; 
+                    DB.savingsTransactions.push({ id: 'STXN' + Date.now(), savingsId: payment.savingsId, memberId: payment.memberId, type: payment.type, amount: payment.amount, reference: payment.description, monthLabel: payment.dueMonth, date: new Date().toISOString(), dateTime: new Date().toISOString() }); 
+                } else if (payment.type === 'proc' || payment.type === 'emi') { 
+                    var loan = DB.loans.find(l => l.id === payment.loanId); 
+                    if (loan) { 
+                        if (payment.type === 'proc') { loan.procFeePaid = true; } 
+                        else if (payment.type === 'emi') { 
+                            loan.paidAmount = (loan.paidAmount || 0) + payment.amount; 
+                            loan.paidEmis = Math.floor(loan.paidAmount / (loan.emiAmount || DB.conf.emi)); 
+                            loan.nextEmiDue = loan.paidEmis + 1;
+                        } 
+                    } 
+                    DB.loanTransactions.push({ id: 'LTXN' + Date.now(), loanId: payment.loanId, memberId: payment.memberId, type: payment.type, amount: payment.amount, emiNumber: payment.emiNumber, reference: payment.description, date: new Date().toISOString(), dateTime: new Date().toISOString() }); 
+                } 
+                saveDataToLocal(); 
+                pendingPayments = pendingPayments.filter(p => p.id !== paymentId); 
+                localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments)); 
+                showNotification('✅ Payment approved!', 'alert'); 
+                openPaymentApproval(); 
+                loadDashboard(); 
+            } 
+        }
         
-        // BLOCK-12: LOAN REQUEST
+        // REST OF FUNCTIONS
+        function showPaymentList() { var accounts = DB.savingsAccounts.filter(a => a.memberId === currentMember.id && a.status === 'active'); if(accounts.length===0){ alert('No active savings accounts found.'); return; } var html = '<div style="padding:10px;">'; for(var i=0;i<accounts.length;i++){ var account = accounts[i]; var regPaid = DB.savingsTransactions.some(t => t.savingsId === account.id && t.type === 'reg'); html += '<div style="background:#1a1f2e; border:1px solid rgba(46,204,113,0.3); margin-bottom:20px; padding:15px; border-radius:8px;"><div style="font-weight:bold; color:#2ecc71;">🏦 Savings Account #'+account.id.slice(-6)+'</div><div>Balance: '+formatAmount(account.balance)+'</div>'; if(!regPaid){ html += '<button onclick="submitRegFeePayment(\''+account.id+'\')" class="btn-save" style="margin-top:10px; background:#ff9f0a;">Pay Registration Fee '+formatAmount(DB.conf.reg)+'</button>'; } else { var accountOpenDate = new Date(account.openDateTime || account.openDate); var paidDeposits = DB.savingsTransactions.filter(t=>t.savingsId===account.id && t.type==='dep').map(function(t) { return { monthLabel: t.monthLabel }; }); var nextDue = getNextDueDepositMonth(accountOpenDate, paidDeposits); if(nextDue){ var isSubmitted = pendingPayments.some(p => p.savingsId === account.id && p.type === 'dep' && p.dueMonth === nextDue.monthLabel && p.status === 'pending'); html += '<div style="margin-top:15px;"><strong>📅 Next Deposit Due: ' + nextDue.monthLabel + '</strong></div>'; html += '<button onclick="submitSequentialDepositPayment(\''+account.id+'\',\''+nextDue.monthLabel+'\')" class="btn-save" style="margin-top:10px;" ' + (isSubmitted ? 'disabled' : '') + '>' + (isSubmitted ? '⏳ SUBMITTED' : 'Pay ' + formatAmount(DB.conf.dep)) + '</button>'; } else { html += '<div style="margin-top:15px; color:#2ecc71;">✅ All deposits up to date!</div>'; } } html += '</div>'; } html += '</div>'; openDrilldownModal('💰 Payment List', html); }
+        
         function openLoanRequestModal() { var accounts = DB.savingsAccounts.filter(a => a.memberId === currentMember.id && a.status === 'active'); if(accounts.length===0){ alert('No active savings accounts found.'); return; } var select = document.getElementById('loanAccount'); select.innerHTML = ''; for(var i=0;i<accounts.length;i++){ var hasActiveLoan = DB.loans.some(l => l.linkedSavingsId === accounts[i].id && l.status === 'active'); var hasPendingRequest = DB.requests.some(r => r.linkedSavingsId === accounts[i].id && r.status === 'pending'); var disabled = (hasActiveLoan || hasPendingRequest) ? 'disabled' : ''; var warning = ''; if(hasActiveLoan) warning = ' (Active Loan Exists)'; else if(hasPendingRequest) warning = ' (Request Pending)'; select.innerHTML += '<option value="'+accounts[i].id+'" '+disabled+'>#'+accounts[i].id.slice(-6)+' - Balance: '+formatAmount(accounts[i].balance)+warning+'</option>'; } openModal('loanRequestModal'); calculateMaxLoanAmount(); }
         function calculateMaxLoanAmount() { var savingsId = document.getElementById('loanAccount').value; var account = DB.savingsAccounts.find(a=>a.id===savingsId); if(!account) return; var hasActiveLoan = DB.loans.some(l => l.linkedSavingsId === savingsId && l.status === 'active'); var hasPendingRequest = DB.requests.some(r => r.linkedSavingsId === savingsId && r.status === 'pending'); if(hasActiveLoan || hasPendingRequest){ document.getElementById('loanEligibility').innerHTML = '<div class="not-eligible">✗ NOT ELIGIBLE.<br>' + (hasActiveLoan ? 'Active loan exists.' : 'Loan request pending.') + '</div>'; document.getElementById('loanAmount').disabled = true; return; } var openDate = new Date(account.openDateTime||account.openDate); var monthsActive = (new Date().getFullYear()-openDate.getFullYear())*12+(new Date().getMonth()-openDate.getMonth()); var requiredBalance = DB.conf.dep * DB.conf.ml; var eligibleAmount = 0; if(monthsActive<=6) eligibleAmount=(account.balance||0)*DB.conf.tier1/100; else if(monthsActive<=12) eligibleAmount=(account.balance||0)*DB.conf.tier2/100; else if(monthsActive<=18) eligibleAmount=(account.balance||0)*DB.conf.tier3/100; else if(monthsActive<=24) eligibleAmount=(account.balance||0)*DB.conf.tier4/100; else eligibleAmount=(account.balance||0)*DB.conf.tier5/100; var maxEligible = Math.min(eligibleAmount, DB.conf.max); var isEligible = monthsActive >= DB.conf.ml && (account.balance||0) >= requiredBalance && maxEligible > 0; if(isEligible){ document.getElementById('loanEligibility').innerHTML = '<div style="background:rgba(46,204,113,0.2); color:#2ecc71; padding:12px; border-radius:8px;">✓ ELIGIBLE! Max Loan: '+formatAmount(maxEligible)+'</div>'; document.getElementById('loanAmount').max = maxEligible; document.getElementById('loanAmount').disabled = false; } else { var reason = ''; if(monthsActive < DB.conf.ml) reason = 'Need ' + DB.conf.ml + '+ months account age.'; else if((account.balance||0) < requiredBalance) reason = 'Minimum savings of ' + formatAmount(requiredBalance) + ' required.'; else if(maxEligible <= 0) reason = 'Insufficient savings balance.'; document.getElementById('loanEligibility').innerHTML = '<div class="not-eligible">✗ NOT ELIGIBLE<br><small>' + reason + '</small></div>'; document.getElementById('loanAmount').disabled = true; } }
         function submitLoanRequest() { var savingsId = document.getElementById('loanAccount').value; var amount = parseFloat(document.getElementById('loanAmount').value); var purpose = document.getElementById('loanPurpose').value; if(!savingsId || amount<=0 || !purpose){ alert('Please fill all fields'); return; } var hasActiveLoan = DB.loans.some(l => l.linkedSavingsId === savingsId && l.status === 'active'); var hasPendingRequest = DB.requests.some(r => r.linkedSavingsId === savingsId && r.status === 'pending'); if(hasActiveLoan){ alert('This savings account already has an active loan.'); return; } if(hasPendingRequest){ alert('A loan request is already pending for this account.'); return; } DB.requests.push({ id:'REQ'+Date.now(), memberId:currentMember.id, memberName:currentMember.name, linkedSavingsId: savingsId, amount: amount, purpose: purpose, requestDate:new Date().toISOString(), status:'pending' }); saveDataToLocal(); showNotification('Loan request submitted! Awaiting admin approval.', 'alert'); closeModal('loanRequestModal'); loadDashboard(); }
         
-        // BLOCK-13: ACCOUNT STATEMENT
-        function showAccountSelectorForStatement() { var savingsAccounts = DB.savingsAccounts.filter(a=>a.memberId===currentMember.id && a.status==='active'); if(savingsAccounts.length===0){ alert('No active savings accounts found.'); return; } var html = '<div style="padding:5px;"><select id="stmtAcc" style="width:100%; padding:14px; background:#2a2f3e; color:white; border-radius:8px;">'; for(var i=0;i<savingsAccounts.length;i++){ html += '<option value="'+savingsAccounts[i].id+'">Savings #'+savingsAccounts[i].id.slice(-6)+' - '+formatAmount(savingsAccounts[i].balance)+'</option>'; } html += '</select><button class="btn-save" style="margin-top:15px; width:100%;" onclick="generateSavingsStatement(document.getElementById(\'stmtAcc\').value)">Generate Statement</button></div>'; openDrilldownModal('📄 Savings Statement', html); }
-        function generateSavingsStatement(savingsId) { var account = DB.savingsAccounts.find(a=>a.id===savingsId); var transactions = DB.savingsTransactions.filter(t=>t.savingsId===savingsId).sort((a,b)=>new Date(b.dateTime||b.date)-new Date(a.dateTime||a.date)); var totalDeposit = transactions.filter(t=>t.type==='dep').reduce((s,t)=>s+(t.amount||0),0); var totalWithdrawal = transactions.filter(t=>t.type==='wd').reduce((s,t)=>s+(t.amount||0),0); var regPaid = transactions.some(t=>t.type==='reg'); var html = '<div style="background:#1a1f2e; padding:20px; border-radius:8px;"><div><strong>Savings Account #'+account.id.slice(-6)+'</strong><br>Balance: '+formatAmount(account.balance)+'<br>Opening Date: '+new Date(account.openDateTime||account.openDate).toLocaleDateString()+'</div><div>Total Deposits: '+formatAmount(totalDeposit)+' | Withdrawals: '+formatAmount(totalWithdrawal)+'</div><div>Registration Fee: '+(regPaid?'<span class="status-paid">✓ PAID</span>':'<span class="status-pending">⚠ NOT PAID</span>')+'</div><br><strong>📋 Transaction History</strong>'; for(var i=0;i<Math.min(transactions.length,20);i++){ var t=transactions[i]; html += '<div class="transaction-item">'+new Date(t.dateTime||t.date).toLocaleDateString()+' - '+t.type+' - '+formatAmount(t.amount)+' <button onclick="showReceipt(\''+t.id+'\', \'savings\')" class="receipt-btn">Receipt</button></div>'; } html += '<button class="btn-cancel" style="margin-top:15px;" onclick="showAccountSelectorForStatement()">Back</button></div>'; openDrilldownModal('📄 Savings Statement', html); }
-        
-        // BLOCK-14: LEADER, ADMIN, IT FUNCTIONS (condensed - same as before)
+        // ADMIN/LEADER/IT Functions (condensed)
         function showTeamMembersDrilldown() { var teamMembers = DB.members.filter(m => m.type === 'member' && m.leaderId === currentMember.id); var html = ''; for (var i = 0; i < teamMembers.length; i++) { var m = teamMembers[i]; var accounts = DB.savingsAccounts.filter(a => a.memberId === m.id); var savings = accounts.reduce((s,a)=>s+(a.balance||0),0); html += '<div class="item-card" onclick="showMemberDetails(\'' + m.id + '\')"><div><strong>' + m.name + '</strong><br>📱 ' + m.mobile + '</div><div>💰 ' + formatAmount(savings) + '</div></div>'; } openDrilldownModal('👥 Team Members', html); }
         function showMemberDetails(memberId) { var member = DB.members.find(m=>m.id===memberId); var accounts = DB.savingsAccounts.filter(a=>a.memberId===memberId); var loans = DB.loans.filter(l=>l.memberId===memberId); var html = '<div style="margin-bottom:15px;padding:10px;background:#1a1f2e; border-radius:8px;"><strong>'+member.name+'</strong><br>📱 '+member.mobile+'<br>📧 '+member.email+'</div><h4>💰 Savings Accounts</h4>'; for(var i=0;i<accounts.length;i++){ html += '<div class="item-card" onclick="showSavingsAccountStatementForAdmin(\''+accounts[i].id+'\')"><div>Savings #'+accounts[i].id.slice(-6)+'</div><div>Balance: '+formatAmount(accounts[i].balance)+'</div></div>'; } html += '<h4>📋 Loans</h4>'; for(var i=0;i<loans.length;i++){ var due=(loans[i].amount||0)-(loans[i].paidAmount||0); html += '<div class="item-card" onclick="showLoanDetailsForAdmin(\''+loans[i].id+'\')"><div>Loan #'+loans[i].id.slice(-6)+'</div><div>Due: '+formatAmount(due)+'</div></div>'; } html += '<button class="btn-cancel" onclick="showTeamMembersDrilldown()">← Back</button>'; openDrilldownModal('👤 Member Details', html); }
         function showSavingsAccountStatementForAdmin(savingsId) { var account = DB.savingsAccounts.find(a=>a.id===savingsId); var transactions = DB.savingsTransactions.filter(t=>t.savingsId===savingsId).sort((a,b)=>new Date(b.dateTime||b.date)-new Date(a.dateTime||a.date)); var html = '<div><strong>Savings #'+account.id.slice(-6)+'</strong><br>Balance: '+formatAmount(account.balance)+'</div>'; for(var i=0;i<transactions.length;i++){ var t=transactions[i]; html += '<div class="transaction-item">'+new Date(t.dateTime||t.date).toLocaleDateString()+' - '+t.type+' - '+formatAmount(t.amount)+' <button onclick="showReceipt(\''+t.id+'\', \'savings\')" class="receipt-btn">Receipt</button></div>'; } html += '<button onclick="showMemberDetails(\''+account.memberId+'\')" class="btn-cancel">← Back</button>'; openDrilldownModal('📊 Savings Transactions', html); }
@@ -424,11 +722,10 @@
         function showAllMembersDrilldown() { var members = DB.members.filter(m => m.type === 'member'); var html = ''; for (var i = 0; i < members.length; i++) { var m = members[i]; var leader = DB.members.find(l => l.id === m.leaderId); html += '<div class="item-card" onclick="showMemberDetails(\'' + m.id + '\')"><div><strong>' + m.name + '</strong><br>📱 ' + m.mobile + '</div><div>Leader: ' + (leader ? leader.name : 'N/A') + '</div></div>'; } openDrilldownModal('👥 Members', html); }
         function showAllAccountsDrilldown() { var accounts = DB.savingsAccounts.slice(); var html = ''; for (var i = 0; i < accounts.length; i++) { var a = accounts[i]; var member = DB.members.find(m => m.id === a.memberId); html += '<div class="item-card" onclick="showSavingsAccountStatementForAdmin(\'' + a.id + '\')"><div>Savings #' + a.id.slice(-6) + '<br>Member: ' + (member ? member.name : a.memberName) + '</div><div>Balance: ' + formatAmount(a.balance) + '</div></div>'; } openDrilldownModal('💰 All Savings Accounts', html); }
         function showAllLoansDrilldown() { var loans = DB.loans.filter(l => l.status === 'active'); var html = ''; for (var i = 0; i < loans.length; i++) { var l = loans[i]; var member = DB.members.find(m => m.id === l.memberId); var due = (l.amount || 0) - (l.paidAmount || 0); html += '<div class="item-card" onclick="showLoanDetailsForAdmin(\'' + l.id + '\')"><div>Loan #' + l.id.slice(-6) + '<br>Member: ' + (member ? member.name : l.memberName) + '</div><div>Due: ' + formatAmount(due) + '</div></div>'; } openDrilldownModal('📋 Active Loans', html); }
-        function openPaymentApproval() { var pending = pendingPayments.filter(p => p.status === 'pending'); if (pending.length === 0) { showNotification('📭 No pending payments', 'alert'); var emptyHtml = '<div style="text-align:center;padding:40px;">✨ No pending payments</div>'; openDrilldownModal('💳 Pending Payments', emptyHtml); return; } var html = ''; for (var i = 0; i < pending.length; i++) { var p = pending[i]; var typeDisplay = p.type === 'dep' ? 'Deposit' : (p.type === 'emi' ? 'EMI Payment' : (p.type === 'reg' ? 'Registration Fee' : (p.type === 'proc' ? 'Processing Fee' : p.type))); html += '<div class="item-card"><div><strong>' + p.memberName + '</strong><br><small>' + typeDisplay + '</small><br>' + formatAmount(p.amount) + (p.emiNumber ? '<br>EMI #' + p.emiNumber : '') + (p.dueMonth ? '<br>Month: ' + p.dueMonth : '') + '</div><div><button class="btn-sm btn-approve" onclick="approvePayment(\'' + p.id + '\')">✅ Approve</button><button class="btn-sm btn-reject" onclick="rejectPayment(\'' + p.id + '\')">❌ Reject</button></div></div>'; } openDrilldownModal('💳 Pending Payments (' + pending.length + ')', html); }
-        function approvePayment(paymentId) { var payment = pendingPayments.find(p => p.id === paymentId); if (payment && payment.status === 'pending') { payment.status = 'approved'; if (payment.type === 'dep' || payment.type === 'reg') { var savingsAccount = DB.savingsAccounts.find(a => a.id === payment.savingsId); if (savingsAccount && payment.type === 'dep') savingsAccount.balance += payment.amount; DB.savingsTransactions.push({ id: 'STXN' + Date.now(), savingsId: payment.savingsId, memberId: payment.memberId, type: payment.type, amount: payment.amount, reference: payment.description, date: new Date().toISOString(), dateTime: new Date().toISOString() }); } else if (payment.type === 'proc' || payment.type === 'emi') { var loan = DB.loans.find(l => l.id === payment.loanId); if (loan) { if (payment.type === 'proc') loan.procFeePaid = true; else if (payment.type === 'emi') { loan.paidAmount = (loan.paidAmount || 0) + payment.amount; loan.paidEmis = Math.floor(loan.paidAmount / (loan.emiAmount || DB.conf.emi)); } } DB.loanTransactions.push({ id: 'LTXN' + Date.now(), loanId: payment.loanId, memberId: payment.memberId, type: payment.type, amount: payment.amount, emiNumber: payment.emiNumber, reference: payment.description, date: new Date().toISOString(), dateTime: new Date().toISOString() }); } saveDataToLocal(); pendingPayments = pendingPayments.filter(p => p.id !== paymentId); localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments)); showNotification('✅ Payment approved!', 'alert'); openPaymentApproval(); loadDashboard(); } }
+        function openPaymentApproval() { var pending = pendingPayments.filter(p => p.status === 'pending'); if (pending.length === 0) { showNotification('📭 No pending payments', 'alert'); openDrilldownModal('💳 Pending Payments', '<div style="text-align:center;padding:40px;">✨ No pending payments</div>'); return; } var html = ''; for (var i = 0; i < pending.length; i++) { var p = pending[i]; var typeDisplay = p.type === 'dep' ? 'Deposit' : (p.type === 'emi' ? 'EMI Payment' : (p.type === 'reg' ? 'Registration Fee' : (p.type === 'proc' ? 'Processing Fee' : p.type))); html += '<div class="item-card"><div><strong>' + p.memberName + '</strong><br><small>' + typeDisplay + '</small><br>' + formatAmount(p.amount) + (p.emiNumber ? '<br>EMI #' + p.emiNumber : '') + (p.dueMonth ? '<br>Month: ' + p.dueMonth : '') + '</div><div><button class="btn-sm btn-approve" onclick="approvePayment(\'' + p.id + '\')">✅ Approve</button><button class="btn-sm btn-reject" onclick="rejectPayment(\'' + p.id + '\')">❌ Reject</button></div></div>'; } openDrilldownModal('💳 Pending Payments (' + pending.length + ')', html); }
         function rejectPayment(paymentId) { pendingPayments = pendingPayments.filter(p => p.id !== paymentId); localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments)); showNotification('❌ Payment rejected', 'alert'); openPaymentApproval(); }
         function openLoanApproval() { var pendingRequests = DB.requests.filter(r => r.status === 'pending'); if (pendingRequests.length === 0) { alert('No pending loan requests'); return; } var html = ''; for (var i = 0; i < pendingRequests.length; i++) { var r = pendingRequests[i]; html += '<div class="item-card"><div><strong>' + r.memberName + '</strong><br>Amount: ' + formatAmount(r.amount) + '<br>Purpose: ' + r.purpose + '</div><div><button class="btn-sm btn-approve" onclick="approveLoan(\'' + r.id + '\')">Approve</button><button class="btn-sm btn-reject" onclick="rejectLoan(\'' + r.id + '\')">Reject</button></div></div>'; } openDrilldownModal('📋 Loan Requests', html); }
-        function approveLoan(requestId) { var req = DB.requests.find(r => r.id === requestId); if (req) { req.status = 'approved'; DB.loans.push({ id: 'LOAN' + Date.now(), memberId: req.memberId, memberName: req.memberName, linkedSavingsId: req.linkedSavingsId, amount: req.amount, paidAmount: 0, status: 'active', procFeePaid: false, approvalDate: new Date().toISOString().split('T')[0], approvalDateTime: new Date().toISOString(), emiAmount: DB.conf.emi, totalEmis: Math.ceil(req.amount / DB.conf.emi), paidEmis: 0 }); saveDataToLocal(); showNotification('Loan approved!', 'alert'); openLoanApproval(); loadDashboard(); } }
+        function approveLoan(requestId) { var req = DB.requests.find(r => r.id === requestId); if (req) { req.status = 'approved'; DB.loans.push({ id: 'LOAN' + Date.now(), memberId: req.memberId, memberName: req.memberName, linkedSavingsId: req.linkedSavingsId, amount: req.amount, paidAmount: 0, status: 'active', procFeePaid: false, approvalDate: new Date().toISOString().split('T')[0], approvalDateTime: new Date().toISOString(), emiAmount: DB.conf.emi, totalEmis: Math.ceil(req.amount / DB.conf.emi), paidEmis: 0, nextEmiDue: 1 }); saveDataToLocal(); showNotification('Loan approved!', 'alert'); openLoanApproval(); loadDashboard(); } }
         function rejectLoan(requestId) { var req = DB.requests.find(r => r.id === requestId); if (req) { req.status = 'rejected'; saveDataToLocal(); showNotification('Loan rejected'); openLoanApproval(); } }
         function openTransferApproval() { var pendingTransfers = DB.transferRequests.filter(t => t.status === 'pending'); if (pendingTransfers.length === 0) { alert('No pending transfer requests'); return; } var html = ''; for (var i = 0; i < pendingTransfers.length; i++) { var t = pendingTransfers[i]; var currentLeader = DB.members.find(m => m.id === t.currentLeaderId); var newLeader = DB.members.find(m => m.id === t.newLeaderId); html += '<div class="item-card"><div><strong>' + t.memberName + '</strong><br>From: ' + (currentLeader ? currentLeader.name : 'N/A') + '<br>To: ' + (newLeader ? newLeader.name : 'N/A') + '</div><div><button class="btn-sm btn-approve" onclick="approveTransfer(\'' + t.id + '\')">Approve</button><button class="btn-sm btn-reject" onclick="rejectTransfer(\'' + t.id + '\')">Reject</button></div></div>'; } openDrilldownModal('🔄 Transfer Requests', html); }
         function approveTransfer(transferId) { var transfer = DB.transferRequests.find(t => t.id === transferId); if (transfer) { var member = DB.members.find(m => m.id === transfer.memberId); if (member) member.leaderId = transfer.newLeaderId; transfer.status = 'approved'; saveDataToLocal(); showNotification('Transfer approved!', 'alert'); openTransferApproval(); loadDashboard(); } }
@@ -444,14 +741,12 @@
         function saveBackupSettings() { var interval = parseInt(document.getElementById('backupInterval').value); localStorage.setItem('BACKUP_INTERVAL', interval); if (backupIntervalId) clearInterval(backupIntervalId); backupIntervalId = setInterval(function() { localStorage.setItem('AUTO_BACKUP', JSON.stringify({db:DB,pendingPayments,timestamp:new Date().toISOString()})); }, interval * 60 * 60 * 1000); showNotification('Backup schedule saved!'); closeModal('backupRestoreModal'); }
         function showRestoreFileInput() { document.getElementById('restoreFile').click(); }
         function restoreFromFile() { var file = document.getElementById('restoreFile').files[0]; if (!file) return; var reader = new FileReader(); reader.onload = function(e) { try { var data = JSON.parse(e.target.result); if (data.db) DB = data.db; if (data.pendingPayments) pendingPayments = data.pendingPayments; saveDataToLocal(); localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments)); showNotification('Restore successful!', 'alert'); if (isFirebaseConnected) setTimeout(function() { syncToCloud(); }, 1000); setTimeout(function() { location.reload(); }, 1500); } catch(err) { alert('Invalid backup file'); } }; reader.readAsText(file); }
-        function openLedgerModal() { var html = '<table style="width:100%; border-collapse: collapse;"><tr style="background:#2c3e50; color:white;"><th>Date</th><th>Type</th><th>Account</th><th>Amount</th><tr>'; var allTx = []; DB.savingsTransactions.forEach(t => { allTx.push({ date: t.dateTime || t.date, type: 'Savings: ' + t.type, account: t.savingsId, amount: t.amount }); }); DB.loanTransactions.forEach(t => { allTx.push({ date: t.dateTime || t.date, type: 'Loan: ' + t.type, account: t.loanId, amount: t.amount }); }); allTx.sort((a,b)=>new Date(b.date)-new Date(a.date)); for(var i=0;i<Math.min(allTx.length,50);i++){ var tx=allTx[i]; html += '<tr><td style="color:#fff;">'+new Date(tx.date).toLocaleDateString()+'</td><td style="color:#fff;">'+tx.type+'</td><td style="color:#fff;">'+tx.account.slice(-6)+'</td><td style="color:#fff;">'+formatAmount(tx.amount)+'NonNull'; } html += '</table>'; document.getElementById('ledgerContent').innerHTML = html; openModal('ledgerModal'); }
+        function openLedgerModal() { var html = '<table style="width:100%; border-collapse: collapse;"><tr style="background:#2c3e50; color:white;"><th>Date</th><th>Type</th><th>Account</th><th>Amount</th></tr>'; var allTx = []; DB.savingsTransactions.forEach(t => { allTx.push({ date: t.dateTime || t.date, type: 'Savings: ' + t.type, account: t.savingsId, amount: t.amount }); }); DB.loanTransactions.forEach(t => { allTx.push({ date: t.dateTime || t.date, type: 'Loan: ' + t.type, account: t.loanId, amount: t.amount }); }); allTx.sort((a,b)=>new Date(b.date)-new Date(a.date)); for(var i=0;i<Math.min(allTx.length,50);i++){ var tx=allTx[i]; html += '<tr><td style="color:#fff;">'+new Date(tx.date).toLocaleDateString()+'</td><td style="color:#fff;">'+tx.type+'</td><td style="color:#fff;">'+tx.account.slice(-6)+'</td><td style="color:#fff;">'+formatAmount(tx.amount)+'NonNull'; } html += '</table>'; document.getElementById('ledgerContent').innerHTML = html; openModal('ledgerModal'); }
         function openNotificationModal() { openModal('notificationModal'); }
         function loadNotificationTemplate() { var template = document.getElementById('notifTemplate').value; var templates = { 'payment_reminder': { subject: '💰 Payment Reminder', message: 'Dear member, your monthly deposit is due.' }, 'meeting_reminder': { subject: '📅 Meeting Reminder', message: 'Reminder: Group meeting tomorrow at 6 PM.' }, 'loan_approval': { subject: '✅ Loan Approved', message: 'Congratulations! Your loan has been approved.' }, 'welcome': { subject: '👋 Welcome!', message: 'Welcome to AL AMIN GROUP!' } }; if (templates[template]) { document.getElementById('notifSubject').value = templates[template].subject; document.getElementById('notifMessage').value = templates[template].message; } }
         function sendNotificationMsg() { var to = document.getElementById('notifTo').value; var subject = document.getElementById('notifSubject').value; var message = document.getElementById('notifMessage').value; if (!subject || !message) { alert('Fill all fields'); return; } showNotification('Notification sent to ' + to, 'alert'); closeModal('notificationModal'); }
         function recordExpense() { var desc = document.getElementById('expenseDesc').value; var amount = parseFloat(document.getElementById('expenseAmount').value); if (!desc || amount <= 0) { alert('Invalid expense'); return; } showNotification('Expense recorded: ' + formatAmount(amount)); closeModal('expenseModal'); }
         function updateCurrencyFormat() { }
-        
-        // BLOCK-15: IT FUNCTIONS (Edit/Delete)
         function showAllMembersWithEdit() { var members = DB.members.filter(m => m.type === 'member'); var html = ''; for (var i = 0; i < members.length; i++) { var m = members[i]; var leader = DB.members.find(l => l.id === m.leaderId); html += '<div class="item-card"><div><strong>' + m.name + '</strong><br>📱 ' + m.mobile + '<br>Leader: ' + (leader ? leader.name : 'N/A') + '</div><div><button class="btn-sm btn-warning" onclick="editMember(\'' + m.id + '\')">Edit</button> <button class="btn-sm btn-reject" onclick="deleteMemberById(\'' + m.id + '\')">Delete</button></div></div>'; } openDrilldownModal('👥 Members (Edit/Delete)', html); }
         function editMember(memberId) { var member = DB.members.find(m => m.id === memberId); window.currentEditMemberId = memberId; document.getElementById('editMemberName').value = member.name; document.getElementById('editMemberEmail').value = member.email || ''; document.getElementById('editMemberMobile').value = member.mobile || ''; document.getElementById('editMemberIdc').value = member.idc || ''; var leaderSelect = document.getElementById('editMemberLeader'); leaderSelect.innerHTML = '<option value="">-- Select Leader --</option>'; DB.members.filter(l => l.type === 'leader').forEach(l => { leaderSelect.innerHTML += '<option value="' + l.id + '"' + (l.id === member.leaderId ? ' selected' : '') + '>' + l.name + '</option>'; }); openModal('editMemberModal'); }
         function saveMemberEdit() { var member = DB.members.find(m => m.id === window.currentEditMemberId); if (member) { member.name = document.getElementById('editMemberName').value; member.email = document.getElementById('editMemberEmail').value; member.mobile = document.getElementById('editMemberMobile').value; member.idc = document.getElementById('editMemberIdc').value; member.leaderId = document.getElementById('editMemberLeader').value; saveDataToLocal(); showNotification('Member updated'); closeModal('editMemberModal'); showAllMembersWithEdit(); loadDashboard(); } }
@@ -470,14 +765,10 @@
         function deleteTransactionById(transactionId, category) { if (confirm('Delete this transaction?')) { if (category === 'savings') { DB.savingsTransactions = DB.savingsTransactions.filter(t => t.id !== transactionId); } else { DB.loanTransactions = DB.loanTransactions.filter(t => t.id !== transactionId); } saveDataToLocal(); showNotification('Transaction deleted'); showAllTransactionsWithEdit(); loadDashboard(); } }
         function openTransferRequestModal() { var memberSelect = document.getElementById('transferMemberSelect'); var leaderSelect = document.getElementById('transferLeaderSelect'); memberSelect.innerHTML = '<option value="">-- Select Member --</option>'; var teamMembers = DB.members.filter(m => m.type === 'member' && m.leaderId === currentMember.id); for (var i = 0; i < teamMembers.length; i++) { memberSelect.innerHTML += '<option value="' + teamMembers[i].id + '">' + teamMembers[i].name + '</option>'; } leaderSelect.innerHTML = '<option value="">-- Select New Leader --</option>'; var leaders = DB.members.filter(m => m.type === 'leader' && m.id !== currentMember.id); for (var i = 0; i < leaders.length; i++) { leaderSelect.innerHTML += '<option value="' + leaders[i].id + '">' + leaders[i].name + '</option>'; } openModal('transferRequestModal'); }
         function submitTransferRequest() { var memberId = document.getElementById('transferMemberSelect').value; var newLeaderId = document.getElementById('transferLeaderSelect').value; var reason = document.getElementById('transferReason').value; if (!memberId || !newLeaderId) { alert('Please select member and new leader'); return; } DB.transferRequests.push({ id: 'TR' + Date.now(), memberId: memberId, memberName: DB.members.find(m => m.id === memberId).name, currentLeaderId: currentSession.userId, newLeaderId: newLeaderId, reason: reason, requestDate: new Date().toISOString(), status: 'pending' }); saveDataToLocal(); showNotification('Transfer request submitted!', 'alert'); closeModal('transferRequestModal'); }
-        
-        // Leader Management for IT Dashboard
         function showLeaderManagement() { var leaders = DB.members.filter(m => m.type === 'leader'); var html = '<div style="padding:10px;"><h3 style="color:white; margin-bottom:15px;">⭐ Leader Management</h3>'; for (var i = 0; i < leaders.length; i++) { var l = leaders[i]; var teamMembers = DB.members.filter(m => m.type === 'member' && m.leaderId === l.id); html += '<div class="item-card"><div><strong>' + l.name + '</strong><br>📱 ' + l.mobile + '<br>📧 ' + l.email + '<br>👥 Team: ' + teamMembers.length + ' members</div><div><button class="btn-sm btn-warning" onclick="editLeader(\'' + l.id + '\')">Edit</button> <button class="btn-sm btn-reject" onclick="deleteLeaderById(\'' + l.id + '\')">Delete</button></div></div>'; } html += '<button class="btn-cancel" style="margin-top:15px;" onclick="loadITDashboard()">← Back</button></div>'; openDrilldownModal('⭐ Leader Management', html); }
         function editLeader(leaderId) { var leader = DB.members.find(m => m.id === leaderId); window.currentEditLeaderId = leaderId; document.getElementById('editLeaderName').value = leader.name; document.getElementById('editLeaderEmail').value = leader.email || ''; document.getElementById('editLeaderMobile').value = leader.mobile || ''; document.getElementById('editLeaderIdc').value = leader.idc || ''; openModal('editLeaderModal'); }
         function saveLeaderEdit() { var leader = DB.members.find(m => m.id === window.currentEditLeaderId); if (leader) { leader.name = document.getElementById('editLeaderName').value; leader.email = document.getElementById('editLeaderEmail').value; leader.mobile = document.getElementById('editLeaderMobile').value; leader.idc = document.getElementById('editLeaderIdc').value; saveDataToLocal(); showNotification('Leader updated'); closeModal('editLeaderModal'); showLeaderManagement(); loadDashboard(); } }
         function deleteLeaderById(leaderId) { if (confirm('Delete this leader? All team members will become unassigned!')) { var teamMembers = DB.members.filter(m => m.type === 'member' && m.leaderId === leaderId); for (var i = 0; i < teamMembers.length; i++) { teamMembers[i].leaderId = null; } DB.members = DB.members.filter(m => m.id !== leaderId); saveDataToLocal(); showNotification('Leader deleted'); showLeaderManagement(); loadDashboard(); } }
-        
-        // RECEIPT SYSTEM
         function showReceipt(transactionId, category) { var t = (category === 'savings') ? DB.savingsTransactions.find(tx => tx.id === transactionId) : DB.loanTransactions.find(tx => tx.id === transactionId); if (!t) { alert('Transaction not found'); return; } var account = (category === 'savings') ? DB.savingsAccounts.find(a => a.id === t.savingsId) : null; var loan = (category === 'loan') ? DB.loans.find(l => l.id === t.loanId) : null; var member = DB.members.find(m => m.id === t.memberId); var transDateTime = new Date(t.dateTime || t.date); var receiptHtml = '<div class="receipt-content"><div class="receipt-header"><div style="font-size:24px; font-weight:bold;">🏦 ' + DB.conf.name + '</div><div>' + DB.conf.addr + '</div><div style="font-size:18px;">TRANSACTION RECEIPT</div></div><div class="receipt-details"><div><strong>Receipt No:</strong> ' + t.id + '</div><div><strong>Date:</strong> ' + transDateTime.toLocaleString() + '</div><div><strong>Type:</strong> ' + t.type.toUpperCase() + (t.emiNumber ? ' #' + t.emiNumber : '') + '</div><div><strong>Amount:</strong> ' + formatAmount(t.amount) + '</div>' + (t.reference ? '<div><strong>Reference:</strong> ' + t.reference + '</div>' : '') + '<div><strong>Member:</strong> ' + (member ? member.name : 'N/A') + '</div>' + (account ? '<div><strong>Savings Account:</strong> #' + account.id.slice(-6) + '</div><div><strong>Balance:</strong> ' + formatAmount(account.balance) + '</div>' : '') + (loan ? '<div><strong>Loan Account:</strong> #' + loan.id.slice(-6) + '</div><div><strong>Loan Due:</strong> ' + formatAmount((loan.amount||0)-(loan.paidAmount||0)) + '</div>' : '') + '</div>' + (t.type === 'reg' ? '<div style="background: #f39c12; color: white; padding: 8px; border-radius: 8px; text-align: center; margin: 10px 0;">ℹ️ Registration fee goes to company account (non-refundable)</div>' : '') + (t.type === 'proc' ? '<div style="background: #f39c12; color: white; padding: 8px; border-radius: 8px; text-align: center; margin: 10px 0;">ℹ️ Loan processing fee paid - You can now make EMI payments</div>' : '') + '<div class="receipt-footer">Thank you for saving with us!<br><small>Digitally Verified</small></div><div style="margin-top:15px; display:flex; gap:10px; justify-content:center;"><button onclick="shareReceiptWhatsApp(\'' + t.id + '\', \'' + category + '\')" style="background:#25D366; color:white; border:none; padding:8px 12px; border-radius:5px;">📱 WhatsApp</button><button onclick="downloadReceiptPDF(\'' + t.id + '\', \'' + category + '\')" style="background:#ff9800; color:white; border:none; padding:8px 12px; border-radius:5px;">📄 PDF</button><button onclick="copyReceiptText(\'' + t.id + '\', \'' + category + '\')" style="background:#607d8b; color:white; border:none; padding:8px 12px; border-radius:5px;">📋 Copy</button><button onclick="closeReceipt()" style="background:#e74c3c; color:white; border:none; padding:8px 12px; border-radius:5px;">✖ Close</button></div></div>'; var modal = document.createElement('div'); modal.className = 'receipt-modal'; modal.innerHTML = receiptHtml; document.body.appendChild(modal); }
         function shareReceiptWhatsApp(transactionId, category) { var t = (category === 'savings') ? DB.savingsTransactions.find(tx => tx.id === transactionId) : DB.loanTransactions.find(tx => tx.id === transactionId); if (!t) return; var d = new Date(t.dateTime || t.date); var text = '🏦 ' + DB.conf.name + ' - RECEIPT\nReceipt: ' + t.id + '\nDate: ' + d.toLocaleDateString() + '\nAmount: ' + formatAmount(t.amount); window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank'); }
         function downloadReceiptPDF(transactionId, category) { var receiptElement = document.querySelector('.receipt-modal .receipt-content'); if (!receiptElement) return; html2canvas(receiptElement, { scale: 2 }).then(function(canvas) { var imgData = canvas.toDataURL('image/png'); var pdf = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' }); var imgWidth = 148; var imgHeight = (canvas.height * imgWidth) / canvas.width; pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight); pdf.save('receipt_' + transactionId + '.pdf'); showNotification('PDF saved!'); }); }
