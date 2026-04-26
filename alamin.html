@@ -1878,104 +1878,177 @@
         
         function updateNotificationBell() { checkPendingNotifications(); }
         
-      
-      
-    // ======================== BLOCK-056: INIT SYSTEM (UPDATED WITH REAL-TIME SYNC) ========================
-function initSystem() { 
-    loadDataFromLocal(); 
-    pendingPayments = JSON.parse(localStorage.getItem('SHG_PENDING_PAYMENTS')||'[]'); 
-    initFirebase(); 
-    var savedInterval = localStorage.getItem('BACKUP_INTERVAL'); 
-    if (savedInterval) { 
-        backupIntervalId = setInterval(function() { localStorage.setItem('AUTO_BACKUP', JSON.stringify({db:DB,pendingPayments,timestamp:new Date().toISOString()})); }, parseInt(savedInterval) * 60 * 60 * 1000); 
-    } 
-    document.getElementById('loginPanel').style.display = 'block'; 
-    document.getElementById('dashboardContainer').style.display = 'none';
-    
-    // Initialize real-time listener after Firebase connects
-    setTimeout(function() {
-        if (isFirebaseConnected && dbRef) {
-            listenForCloudChanges();
+        // 56. INIT SYSTEM
+        function initSystem() { 
+            loadDataFromLocal(); 
+            pendingPayments = JSON.parse(localStorage.getItem('SHG_PENDING_PAYMENTS')||'[]'); 
+            initFirebase(); 
+            var savedInterval = localStorage.getItem('BACKUP_INTERVAL'); 
+            if (savedInterval) { 
+                backupIntervalId = setInterval(function() { localStorage.setItem('AUTO_BACKUP', JSON.stringify({db:DB,pendingPayments,timestamp:new Date().toISOString()})); }, parseInt(savedInterval) * 60 * 60 * 1000); 
+            } 
+            document.getElementById('loginPanel').style.display = 'block'; 
+            document.getElementById('dashboardContainer').style.display = 'none'; 
+            setInterval(() => checkPendingNotifications(), 5000);
         }
-    }, 2000);
-}  
-      
-      
-      
-// ======================== BLOCK-057: REAL-TIME AUTO SYNC (ADD THIS WHOLE BLOCK) ========================
-// This block adds automatic real-time sync without breaking any existing functions
+        
+        // ======================== BLOCK-057: REAL-TIME SYNC (PURE ADDITION - NO MODIFICATIONS) ========================
+// This block adds real-time sync without changing any existing functions
 
-// Function to push local changes to cloud automatically
-function autoPushToCloud() {
+// Variable to prevent sync loops
+window.realtimeSyncActive = false;
+
+// PUSH: Send local changes to cloud automatically
+function realtimePushToCloud() {
     if (!isFirebaseConnected || !dbRef) return;
-    if (window.syncingInProgress) return;
+    if (window.realtimeSyncActive) return;
     
-    window.syncingInProgress = true;
+    window.realtimeSyncActive = true;
     dbRef.update({ 
         DB: DB, 
         pendingPayments: pendingPayments, 
-        lastAutoSync: new Date().toISOString() 
-    }).catch(function(error) {
-        console.error('Auto-push error:', error);
-    });
-    setTimeout(function() { window.syncingInProgress = false; }, 1000);
+        lastRealtimeSync: new Date().toISOString() 
+    }).catch(function(e) { console.error('Realtime push error:', e); });
+    
+    setTimeout(function() { window.realtimeSyncActive = false; }, 1000);
 }
 
-// Function to listen for cloud changes and update local
-function listenForCloudChanges() {
+// PULL: Listen for cloud changes and update local
+function realtimeListenToCloud() {
     if (!dbRef) return;
     
     dbRef.on('value', function(snapshot) {
-        if (snapshot.exists() && !window.syncingInProgress) {
-            var cloudData = snapshot.val();
-            var localChanged = false;
-            
-            // Check if cloud DB is different from local DB
-            if (cloudData.DB && JSON.stringify(DB) !== JSON.stringify(cloudData.DB)) {
-                DB = cloudData.DB;
-                // Ensure required arrays exist
-                if (!DB.companyAccounts) DB.companyAccounts = [];
-                if (!DB.loanAgreements) DB.loanAgreements = [];
-                if (!DB.notifications) DB.notifications = [];
-                localChanged = true;
-            }
-            
-            // Check if pending payments changed
-            if (cloudData.pendingPayments && JSON.stringify(pendingPayments) !== JSON.stringify(cloudData.pendingPayments)) {
-                pendingPayments = cloudData.pendingPayments;
-                localChanged = true;
-            }
-            
-            // Update local storage and UI if changes came from cloud
-            if (localChanged && currentSession && currentSession.loggedIn) {
-                try {
-                    localStorage.setItem('SHG_PRO_DATA_V5', JSON.stringify(DB));
-                    localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments));
-                } catch(e) {}
-                loadDashboard();
-                showNotification('🔄 Real-time update received from cloud!', 'alert');
-            }
-            updateSyncStatus(true);
+        if (!snapshot.exists()) return;
+        if (window.realtimeSyncActive) return;
+        
+        var cloudData = snapshot.val();
+        var needsRefresh = false;
+        
+        // Check if DB changed
+        if (cloudData.DB && JSON.stringify(DB) !== JSON.stringify(cloudData.DB)) {
+            DB = cloudData.DB;
+            if (!DB.companyAccounts) DB.companyAccounts = [];
+            if (!DB.loanAgreements) DB.loanAgreements = [];
+            if (!DB.notifications) DB.notifications = [];
+            needsRefresh = true;
         }
-    }, function(error) {
-        console.error('Firebase listener error:', error);
-        updateSyncStatus(false);
+        
+        // Check if pending payments changed
+        if (cloudData.pendingPayments && JSON.stringify(pendingPayments) !== JSON.stringify(cloudData.pendingPayments)) {
+            pendingPayments = cloudData.pendingPayments;
+            needsRefresh = true;
+        }
+        
+        // Update local storage and refresh UI if needed
+        if (needsRefresh && currentSession && currentSession.loggedIn) {
+            try {
+                localStorage.setItem('SHG_PRO_DATA_V5', JSON.stringify(DB));
+                localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments));
+            } catch(e) {}
+            loadDashboard();
+            showNotification('🔄 Real-time update received!', 'alert');
+        }
+        
+        // Update sync status display
+        if (document.getElementById('syncText')) {
+            document.getElementById('syncText').innerHTML = '☁️ Real-time ON';
+        }
     });
 }
 
-// Override saveDataToLocal to also trigger auto-push (without breaking original)
-var originalSaveDataToLocal = saveDataToLocal;
-saveDataToLocal = function() {
-    // Call the original function first
-    originalSaveDataToLocal();
-    // Then trigger auto-push to cloud
-    if (isFirebaseConnected && dbRef && !window.syncingInProgress && currentSession && currentSession.loggedIn) {
-        setTimeout(function() { autoPushToCloud(); }, 200);
+// Hook into saveDataToLocal to trigger auto-push (preserve original function)
+if (typeof saveDataToLocal === 'function') {
+    var originalSaveDataToLocal = saveDataToLocal;
+    saveDataToLocal = function() {
+        originalSaveDataToLocal();
+        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
+            setTimeout(function() { realtimePushToCloud(); }, 200);
+        }
+    };
+}
+
+// Hook into approvePayment to trigger auto-push
+if (typeof approvePayment === 'function') {
+    var originalApprovePayment = approvePayment;
+    approvePayment = function(paymentId) {
+        originalApprovePayment(paymentId);
+        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
+            setTimeout(function() { realtimePushToCloud(); }, 200);
+        }
+    };
+}
+
+// Hook into rejectPayment
+if (typeof rejectPayment === 'function') {
+    var originalRejectPayment = rejectPayment;
+    rejectPayment = function(paymentId) {
+        originalRejectPayment(paymentId);
+        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
+            setTimeout(function() { realtimePushToCloud(); }, 200);
+        }
+    };
+}
+
+// Hook into submitLoanRequest
+if (typeof submitLoanRequest === 'function') {
+    var originalSubmitLoanRequest = submitLoanRequest;
+    submitLoanRequest = function() {
+        originalSubmitLoanRequest();
+        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
+            setTimeout(function() { realtimePushToCloud(); }, 200);
+        }
+    };
+}
+
+// Hook into registerNewMember
+if (typeof registerNewMember === 'function') {
+    var originalRegisterNewMember = registerNewMember;
+    registerNewMember = function() {
+        originalRegisterNewMember();
+        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
+            setTimeout(function() { realtimePushToCloud(); }, 200);
+        }
+    };
+}
+
+// Hook into registerNewLeader
+if (typeof registerNewLeader === 'function') {
+    var originalRegisterNewLeader = registerNewLeader;
+    registerNewLeader = function() {
+        originalRegisterNewLeader();
+        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
+            setTimeout(function() { realtimePushToCloud(); }, 200);
+        }
+    };
+}
+
+// Hook into openSavingsAccount
+if (typeof openSavingsAccount === 'function') {
+    var originalOpenSavingsAccount = openSavingsAccount;
+    openSavingsAccount = function() {
+        originalOpenSavingsAccount();
+        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
+            setTimeout(function() { realtimePushToCloud(); }, 200);
+        }
+    };
+}
+
+// Start real-time listener when Firebase is ready
+function startRealtimeSync() {
+    if (dbRef) {
+        realtimeListenToCloud();
+        if (document.getElementById('syncText')) {
+            document.getElementById('syncText').innerHTML = '☁️ Real-time ON';
+        }
+    } else {
+        setTimeout(startRealtimeSync, 1000);
     }
-};
+}
 
-
-
+// Initialize real-time sync after page loads
+setTimeout(startRealtimeSync, 3000);
+        
+        
     </script>
 </body>
 </html>
