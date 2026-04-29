@@ -2705,6 +2705,141 @@
             document.getElementById('dashboardContainer').style.display = 'none'; 
             setInterval(() => checkPendingNotifications(), 5000);
         }
+
+
+
+
+// ======================== BLOCK-058: AUTO-SYNC ON EVERY DATA CHANGE ========================
+// This ensures data automatically syncs to Firestore without clicking Sync Cloud button
+
+// Override saveDataToLocal to auto-sync
+var originalSaveDataToLocal = saveDataToLocal;
+saveDataToLocal = function() {
+    originalSaveDataToLocal();
+    // Auto-sync to Firestore after every save
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() {
+            saveAllDataToFirestore();
+        }, 100);
+    }
+};
+
+// Also trigger sync after these operations
+var originalApprovePayment = approvePayment;
+approvePayment = function(paymentId) {
+    originalApprovePayment(paymentId);
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalSubmitLoanRequest = submitLoanRequest;
+submitLoanRequest = function() {
+    originalSubmitLoanRequest();
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalRegisterNewMember = registerNewMember;
+registerNewMember = function() {
+    originalRegisterNewMember();
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalOpenSavingsAccount = openSavingsAccount;
+openSavingsAccount = function() {
+    originalOpenSavingsAccount();
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalRegisterNewLeader = registerNewLeader;
+registerNewLeader = function() {
+    originalRegisterNewLeader();
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalSaveSettings = saveSettings;
+saveSettings = function() {
+    originalSaveSettings();
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalSubmitTransferRequest = submitTransferRequest;
+submitTransferRequest = function() {
+    originalSubmitTransferRequest();
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalApproveTransfer = approveTransfer;
+approveTransfer = function(transferId) {
+    originalApproveTransfer(transferId);
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalSubmitDigitalSignature = submitDigitalSignature;
+submitDigitalSignature = function() {
+    originalSubmitDigitalSignature();
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalSaveMemberEdit = saveMemberEdit;
+saveMemberEdit = function() {
+    originalSaveMemberEdit();
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalSaveAccountEdit = saveAccountEdit;
+saveAccountEdit = function() {
+    originalSaveAccountEdit();
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalSaveLoanEdit = saveLoanEdit;
+saveLoanEdit = function() {
+    originalSaveLoanEdit();
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalSaveTransactionEdit = saveTransactionEdit;
+saveTransactionEdit = function() {
+    originalSaveTransactionEdit();
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+var originalSaveLeaderEdit = saveLeaderEdit;
+saveLeaderEdit = function() {
+    originalSaveLeaderEdit();
+    if (window.firestoreDb && currentSession && currentSession.loggedIn) {
+        setTimeout(function() { saveAllDataToFirestore(); }, 100);
+    }
+};
+
+showNotification('✅ Auto-sync enabled! Data will sync automatically.', 'alert');
+
+
     </script>
 </body>
 </html>
