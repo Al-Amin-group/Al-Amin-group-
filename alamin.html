@@ -5,37 +5,52 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
     <title>AL AMIN GROUP - SHG PRO</title>
-    
-   
-   <!-- BLOCK-002: EXTERNAL LIBRARIES (Firebase, Chart.js, html2canvas, jspdf) -->
+
+
+
+<!-- BLOCK-002: EXTERNAL LIBRARIES (Cloud Firestore, Chart.js, html2canvas, jspdf) -->
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
-    import { getDatabase, ref, onValue, update } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-database.js";
+    import { 
+        getFirestore, 
+        doc, setDoc, getDoc, getDocs, 
+        collection, addDoc, updateDoc, deleteDoc,
+        onSnapshot, query, where 
+    } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCZQm9ezOduILy3jBWICwAyurT6AIwSy9o",
         authDomain: "al-amin-8e761.firebaseapp.com",
-        databaseURL: "https://al-amin-8e761-default-rtdb.asia-southeast1.firebasedatabase.app",
         projectId: "al-amin-8e761",
         storageBucket: "al-amin-8e761.firebasestorage.app",
         messagingSenderId: "923200240283",
-        appId: "1:923200240283:web:0d77b90531ad050ead243e"
+        appId: "1:923200240283:web:2220208a6c635fb4ad243e"
     };
 
     const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
+    const db = getFirestore(app);
     
-    window.firebaseDb = database;
-    window.firebaseRef = ref;
-    window.firebaseUpdate = update;
-    window.firebaseOnValue = onValue;
+    window.firestoreDb = db;
+    window.firestoreDoc = doc;
+    window.firestoreSetDoc = setDoc;
+    window.firestoreGetDoc = getDoc;
+    window.firestoreGetDocs = getDocs;
+    window.firestoreCollection = collection;
+    window.firestoreAddDoc = addDoc;
+    window.firestoreUpdateDoc = updateDoc;
+    window.firestoreDeleteDoc = deleteDoc;
+    window.firestoreOnSnapshot = onSnapshot;
+    window.firestoreQuery = query;
+    window.firestoreWhere = where;
+    
     window.firebaseInitialized = true;
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-   
-   
+
+
+
     <!-- 3. MAIN STYLES (Global, Header, Cards, Grids, Modals, Print, RWD) -->
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, 'Poppins', sans-serif; }
@@ -336,10 +351,9 @@
     <div id="agreementViewModal" class="modal"><div class="modal-content" style="max-width:700px;"><div class="modal-header"><h3>📄 LOAN AGREEMENT</h3><button class="close-modal-btn" onclick="closeModal('agreementViewModal')">&times;</button></div><div id="agreementViewContent"></div><div class="action-btn-row" id="agreementActionButtons"></div></div></div>
     <div id="signatureModal" class="modal"><div class="modal-content"><div class="modal-header"><h3>✍️ DIGITAL SIGNATURE</h3><button class="close-modal-btn" onclick="closeSignatureModal()">&times;</button></div><div class="signature-pad-container"><canvas id="signatureCanvas" class="signature-pad" width="500" height="200"></canvas></div><div class="action-btn-row"><button class="btn-sm" onclick="clearSignature()">Clear</button><button class="btn-save" onclick="saveSignature()">Save Signature</button><button class="btn-cancel" onclick="closeSignatureModal()">Cancel</button></div></div></div>
 
-
-<!-- 30. JAVASCRIPT: HELPER FUNCTIONS, FIREBASE, GLOBAL DB, NOTIFICATIONS -->
+<!-- 30. JAVASCRIPT: HELPER FUNCTIONS, FIRESTORE, GLOBAL DB, ALL DASHBOARD FUNCTIONS -->
 <script>
-    // Helper Functions
+    // ======================== HELPER FUNCTIONS ========================
     function getMonthName(date) { var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']; return months[date.getMonth()]; }
     function formatMonthYear(date) { return getMonthName(date) + '-' + date.getFullYear().toString().slice(-2); }
     function formatAmount(amount) { if (amount === undefined) amount = 0; return amount.toFixed(DB.conf.cur === 'BHD' ? 3 : 2); }
@@ -363,62 +377,189 @@
         return null;
     }
     
-    // Firebase Config & Global DB (UPDATED with NEW Firebase project)
-    const firebaseConfig = { 
-        apiKey: "AIzaSyCZQm9ezOduILy3jBWICwAyurT6AIwSy9o",
-        authDomain: "al-amin-8e761.firebaseapp.com",
-        databaseURL: "https://al-amin-8e761-default-rtdb.asia-southeast1.firebasedatabase.app",
-        projectId: "al-amin-8e761",
-        storageBucket: "al-amin-8e761.firebasestorage.app",
-        messagingSenderId: "923200240283",
-        appId: "1:923200240283:web:0d77b90531ad050ead243e"
-    };
-    let firebaseApp = null, dbRef = null, isFirebaseConnected = false, isLocalUpdate = false;
+    // ======================== FIRESTORE CONFIG (from BLOCK-002) ========================
+    // Firebase is initialized in BLOCK-002 - window.firestoreDb is available
     
     var DB = { 
         conf: { name: "AL AMIN GROUP", addr: "Bahrain", pass: "123", cur: "BHD", reg: 5.000, dep: 5.000, proc: 2.000, emi: 10.000, don: 5.000, don_mo: 11, mw: 6, ml: 6, max: 1000.000, tier1: 0, tier2: 200, tier3: 300, tier4: 400, tier5: 500 }, 
         members: [], savingsAccounts: [], loans: [], requests: [], savingsTransactions: [], loanTransactions: [], transferRequests: [], loanAgreements: [], companyAccounts: [] 
     };
     var MASTER_PASSWORD = "123", currentSession = { loggedIn: false, userType: null, userId: null, userName: null, lastLogin: null }, currentMember = null, pendingPayments = [], backupIntervalId = null;
+    var isFirebaseConnected = false, isLocalUpdate = false;
     
-    // Modal & Notification Functions
+    // ======================== MODAL & NOTIFICATION FUNCTIONS ========================
     function openDrilldownModal(title, content) { document.getElementById('drilldownModalTitle').innerHTML = title; document.getElementById('drilldownModalContent').innerHTML = content; document.getElementById('drilldownModal').style.display = 'flex'; }
     function closeDrilldownModal() { document.getElementById('drilldownModal').style.display = 'none'; document.getElementById('drilldownModalContent').innerHTML = ''; }
     function showNotification(msg, type) { var n = document.createElement('div'); n.className = 'notification' + (type === 'error' ? ' error' : ''); n.textContent = msg; document.body.appendChild(n); setTimeout(function() { if (n && n.remove) n.remove(); }, 4000); }
     function openModal(id) { var modal = document.getElementById(id); if (modal) modal.style.display = 'flex'; }
     function closeModal(id) { var modal = document.getElementById(id); if (modal) modal.style.display = 'none'; }
     
-    // Firebase Init & Sync
-    function initFirebase() { 
-        try { 
-            if (firebase.apps.length) firebaseApp = firebase.app(); 
-            else firebaseApp = firebase.initializeApp(firebaseConfig); 
-            dbRef = firebase.database().ref('shg_data_v5'); 
-            isFirebaseConnected = true; 
-            updateSyncStatus(true); 
-            dbRef.on('value', function(snapshot) { 
-                if (snapshot.exists() && !isLocalUpdate) { 
-                    const cloudData = snapshot.val(); 
-                    if (cloudData.DB) { 
-                        DB = cloudData.DB; 
-                        if (!DB.companyAccounts) DB.companyAccounts = []; 
-                        if (!DB.loanAgreements) DB.loanAgreements = []; 
-                        if (cloudData.pendingPayments) pendingPayments = cloudData.pendingPayments; 
-                        saveDataToLocal(); 
-                        if (currentSession.loggedIn) { loadDashboard(); showNotification('🔄 Data synced from cloud!', 'alert'); } 
-                    } 
-                } 
-                updateSyncStatus(true); 
-            }, function(error) { console.error('Firebase error:', error); updateSyncStatus(false); }); 
-            return true; 
-        } catch(e) { console.error('Firebase init error:', e); isFirebaseConnected = false; updateSyncStatus(false); return false; } 
+    // ======================== FIRESTORE CONNECTION ========================
+    function updateSyncStatus(connected) { 
+        var sd = document.getElementById('syncStatus'), st = document.getElementById('syncText'); 
+        if (connected && window.firestoreDb) { 
+            if (sd) sd.style.backgroundColor = '#30d158'; 
+            if (st) st.innerHTML = '☁️ Firestore Connected'; 
+        } else { 
+            if (sd) sd.style.backgroundColor = '#ff375f'; 
+            if (st) st.innerHTML = '📡 Offline Mode'; 
+        } 
     }
     
-    function updateSyncStatus(connected) { var sd = document.getElementById('syncStatus'), st = document.getElementById('syncText'); if (connected && isFirebaseConnected) { if (sd) sd.style.backgroundColor = '#30d158'; if (st) st.innerHTML = '☁️ Cloud Sync ON'; } else { if (sd) sd.style.backgroundColor = '#ff375f'; if (st) st.innerHTML = '📡 Offline Mode'; } }
+    async function loadAllDataFromFirestore() {
+        if (!window.firestoreDb) return;
+        try {
+            const membersSnapshot = await window.firestoreGetDocs(window.firestoreCollection(window.firestoreDb, 'members'));
+            DB.members = [];
+            membersSnapshot.forEach(doc => { DB.members.push({ id: doc.id, ...doc.data() }); });
+            
+            const accountsSnapshot = await window.firestoreGetDocs(window.firestoreCollection(window.firestoreDb, 'savingsAccounts'));
+            DB.savingsAccounts = [];
+            accountsSnapshot.forEach(doc => { DB.savingsAccounts.push({ id: doc.id, ...doc.data() }); });
+            
+            const loansSnapshot = await window.firestoreGetDocs(window.firestoreCollection(window.firestoreDb, 'loans'));
+            DB.loans = [];
+            loansSnapshot.forEach(doc => { DB.loans.push({ id: doc.id, ...doc.data() }); });
+            
+            const requestsSnapshot = await window.firestoreGetDocs(window.firestoreCollection(window.firestoreDb, 'requests'));
+            DB.requests = [];
+            requestsSnapshot.forEach(doc => { DB.requests.push({ id: doc.id, ...doc.data() }); });
+            
+            const savingsTxSnapshot = await window.firestoreGetDocs(window.firestoreCollection(window.firestoreDb, 'savingsTransactions'));
+            DB.savingsTransactions = [];
+            savingsTxSnapshot.forEach(doc => { DB.savingsTransactions.push({ id: doc.id, ...doc.data() }); });
+            
+            const loanTxSnapshot = await window.firestoreGetDocs(window.firestoreCollection(window.firestoreDb, 'loanTransactions'));
+            DB.loanTransactions = [];
+            loanTxSnapshot.forEach(doc => { DB.loanTransactions.push({ id: doc.id, ...doc.data() }); });
+            
+            const transferSnapshot = await window.firestoreGetDocs(window.firestoreCollection(window.firestoreDb, 'transferRequests'));
+            DB.transferRequests = [];
+            transferSnapshot.forEach(doc => { DB.transferRequests.push({ id: doc.id, ...doc.data() }); });
+            
+            const agreementsSnapshot = await window.firestoreGetDocs(window.firestoreCollection(window.firestoreDb, 'loanAgreements'));
+            DB.loanAgreements = [];
+            agreementsSnapshot.forEach(doc => { DB.loanAgreements.push({ id: doc.id, ...doc.data() }); });
+            
+            const companySnapshot = await window.firestoreGetDocs(window.firestoreCollection(window.firestoreDb, 'companyAccounts'));
+            DB.companyAccounts = [];
+            companySnapshot.forEach(doc => { DB.companyAccounts.push({ id: doc.id, ...doc.data() }); });
+            
+            const pendingSnapshot = await window.firestoreGetDocs(window.firestoreCollection(window.firestoreDb, 'pendingPayments'));
+            pendingPayments = [];
+            pendingSnapshot.forEach(doc => { pendingPayments.push({ id: doc.id, ...doc.data() }); });
+            
+            const settingsDoc = await window.firestoreGetDoc(window.firestoreDoc(window.firestoreDb, 'settings', 'config'));
+            if (settingsDoc.exists()) {
+                DB.conf = { ...DB.conf, ...settingsDoc.data() };
+            }
+            
+            saveDataToLocal();
+            if (currentSession.loggedIn) loadDashboard();
+            updateSyncStatus(true);
+        } catch(e) {
+            console.error('Error loading from Firestore:', e);
+            updateSyncStatus(false);
+        }
+    }
     
-    function syncToCloud() { if (!isFirebaseConnected || !dbRef) { showNotification('⚠️ Firebase not connected.', 'error'); return; } isLocalUpdate = true; updateSyncStatus(false); document.getElementById('syncText').innerHTML = '🔄 Syncing...'; dbRef.set({ DB: DB, pendingPayments: pendingPayments, lastSync: new Date().toISOString() }).then(() => { showNotification('✅ Data synced to cloud!', 'alert'); isLocalUpdate = false; updateSyncStatus(true); }).catch((error) => { showNotification('❌ Sync failed: ' + error.message, 'error'); isLocalUpdate = false; updateSyncStatus(false); }); }
+    async function saveAllDataToFirestore() {
+        if (!window.firestoreDb) return;
+        try {
+            for (const item of DB.members) {
+                const docRef = window.firestoreDoc(window.firestoreDb, 'members', item.id);
+                await window.firestoreSetDoc(docRef, item);
+            }
+            for (const item of DB.savingsAccounts) {
+                const docRef = window.firestoreDoc(window.firestoreDb, 'savingsAccounts', item.id);
+                await window.firestoreSetDoc(docRef, item);
+            }
+            for (const item of DB.loans) {
+                const docRef = window.firestoreDoc(window.firestoreDb, 'loans', item.id);
+                await window.firestoreSetDoc(docRef, item);
+            }
+            for (const item of DB.requests) {
+                const docRef = window.firestoreDoc(window.firestoreDb, 'requests', item.id);
+                await window.firestoreSetDoc(docRef, item);
+            }
+            for (const item of DB.savingsTransactions) {
+                const docRef = window.firestoreDoc(window.firestoreDb, 'savingsTransactions', item.id);
+                await window.firestoreSetDoc(docRef, item);
+            }
+            for (const item of DB.loanTransactions) {
+                const docRef = window.firestoreDoc(window.firestoreDb, 'loanTransactions', item.id);
+                await window.firestoreSetDoc(docRef, item);
+            }
+            for (const item of DB.transferRequests) {
+                const docRef = window.firestoreDoc(window.firestoreDb, 'transferRequests', item.id);
+                await window.firestoreSetDoc(docRef, item);
+            }
+            for (const item of DB.loanAgreements) {
+                const docRef = window.firestoreDoc(window.firestoreDb, 'loanAgreements', item.id);
+                await window.firestoreSetDoc(docRef, item);
+            }
+            for (const item of DB.companyAccounts) {
+                const docRef = window.firestoreDoc(window.firestoreDb, 'companyAccounts', item.id);
+                await window.firestoreSetDoc(docRef, item);
+            }
+            for (const item of pendingPayments) {
+                const docRef = window.firestoreDoc(window.firestoreDb, 'pendingPayments', item.id);
+                await window.firestoreSetDoc(docRef, item);
+            }
+            const settingsRef = window.firestoreDoc(window.firestoreDb, 'settings', 'config');
+            await window.firestoreSetDoc(settingsRef, DB.conf);
+            updateSyncStatus(true);
+        } catch(e) {
+            console.error('Error saving to Firestore:', e);
+            updateSyncStatus(false);
+        }
+    }
     
-    // Sample Data & Local Storage
+    function setupRealtimeListeners() {
+        if (!window.firestoreDb) return;
+        window.firestoreOnSnapshot(window.firestoreCollection(window.firestoreDb, 'members'), () => {
+            if (currentSession && currentSession.loggedIn) loadAllDataFromFirestore();
+        });
+        window.firestoreOnSnapshot(window.firestoreCollection(window.firestoreDb, 'pendingPayments'), () => {
+            if (currentSession && currentSession.loggedIn) {
+                loadAllDataFromFirestore();
+                if (currentSession.userType === 'admin') openPaymentApproval();
+                showNotification('🔄 New payment received!', 'alert');
+            }
+        });
+        window.firestoreOnSnapshot(window.firestoreCollection(window.firestoreDb, 'loans'), () => {
+            if (currentSession && currentSession.loggedIn) loadAllDataFromFirestore();
+        });
+    }
+    
+    function saveDataToLocal() { 
+        try { 
+            localStorage.setItem('SHG_PRO_DATA_V5', JSON.stringify(DB)); 
+            localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments)); 
+        } catch(e) {} 
+    }
+    
+    function loadDataFromLocal() { 
+        var saved = localStorage.getItem('SHG_PRO_DATA_V5'); 
+        if (saved) { 
+            try { 
+                DB = JSON.parse(saved); 
+                if (!DB.companyAccounts) DB.companyAccounts = []; 
+                if (!DB.loanAgreements) DB.loanAgreements = []; 
+                if (!DB.members || DB.members.length === 0) addSampleData(); 
+                if (!DB.savingsAccounts) DB.savingsAccounts = []; 
+                if (!DB.loanTransactions) DB.loanTransactions = []; 
+                if (!DB.savingsTransactions) DB.savingsTransactions = []; 
+                if (!DB.transferRequests) DB.transferRequests = []; 
+            } catch(e) { 
+                addSampleData(); 
+            } 
+        } else { 
+            addSampleData(); 
+        } 
+        pendingPayments = JSON.parse(localStorage.getItem('SHG_PENDING_PAYMENTS')||'[]'); 
+    }
+    
     function addSampleData() { 
         DB.members = []; DB.savingsAccounts = []; DB.loans = []; DB.requests = []; DB.savingsTransactions = []; DB.loanTransactions = []; DB.transferRequests = []; DB.loanAgreements = []; 
         DB.companyAccounts = [{ id: 'COMP1', name: 'AL AMIN MAIN', balance: 1500, created: new Date().toISOString() }];
@@ -434,9 +575,648 @@
         saveDataToLocal(); 
     }
     
-    function saveDataToLocal() { try { localStorage.setItem('SHG_PRO_DATA_V5', JSON.stringify(DB)); localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments)); if (isFirebaseConnected && dbRef && !isLocalUpdate) setTimeout(() => syncToCloud(), 500); } catch(e) {} }
+    function initFirebase() { 
+        if (window.firestoreDb) {
+            isFirebaseConnected = true;
+            updateSyncStatus(true);
+            loadAllDataFromFirestore();
+            setupRealtimeListeners();
+            return true;
+        }
+        updateSyncStatus(false);
+        return false;
+    }
     
-    function loadDataFromLocal() { var saved = localStorage.getItem('SHG_PRO_DATA_V5'); if (saved) { try { DB = JSON.parse(saved); if (!DB.companyAccounts) DB.companyAccounts = []; if (!DB.loanAgreements) DB.loanAgreements = []; if (!DB.members || DB.members.length === 0) addSampleData(); if (!DB.savingsAccounts) DB.savingsAccounts = []; if (!DB.loanTransactions) DB.loanTransactions = []; if (!DB.savingsTransactions) DB.savingsTransactions = []; if (!DB.transferRequests) DB.transferRequests = []; } catch(e) { addSampleData(); } } else { addSampleData(); } pendingPayments = JSON.parse(localStorage.getItem('SHG_PENDING_PAYMENTS')||'[]'); }
+    async function syncToCloud() { 
+        if (!window.firestoreDb) { 
+            showNotification('⚠️ Firestore not connected.', 'error'); 
+            return; 
+        } 
+        showNotification('🔄 Syncing to Firestore...', 'alert');
+        await saveAllDataToFirestore();
+        showNotification('✅ Data synced to Firestore!', 'alert');
+    }
+    
+    // ======================== LOGIN & AUTHENTICATION ========================
+    function performLogin() { var userType = document.getElementById('userRoleSelect').value, username = document.getElementById('loginUsername').value.trim(), password = document.getElementById('loginPassword').value, isMaster = (password === MASTER_PASSWORD); if (userType === 'admin' && username === 'admin') { if (isMaster || password === 'admin123') { currentSession = { loggedIn: true, userType: 'admin', userId: 'admin1', userName: 'Administrator', lastLogin: new Date().toISOString() }; completeLogin(); return; } alert('Wrong password'); return; } if (userType === 'it' && username === 'it') { if (isMaster || password === 'it123') { currentSession = { loggedIn: true, userType: 'it', userId: 'it1', userName: 'IT Administrator', lastLogin: new Date().toISOString() }; completeLogin(); return; } alert('Wrong password'); return; } var member = DB.members.find(function(m) { return m.name.toLowerCase() === username.toLowerCase(); }); if (!member) { alert('User not found!'); return; } if (userType === 'leader' && member.type !== 'leader') { alert('Not a Leader'); return; } if (userType === 'member' && member.type === 'leader') { alert('Select Leader role'); return; } var expectedPIN = member.pin || member.mobile.slice(-4); if (isMaster || password === expectedPIN) { member.lastLogin = new Date().toISOString(); saveDataToLocal(); saveAllDataToFirestore(); currentSession = { loggedIn: true, userType: member.type === 'leader' ? 'leader' : 'member', userId: member.id, userName: member.name, lastLogin: member.lastLogin }; completeLogin(); return; } alert('Wrong PIN'); }
+    
+    function completeLogin() { document.getElementById('loginPanel').style.display = 'none'; document.getElementById('dashboardContainer').style.display = 'block'; document.getElementById('bottomNavBar').style.display = 'flex'; document.getElementById('welcomeUserName').innerHTML = "Welcome, " + currentSession.userName; currentMember = DB.members.find(function(m) { return m.id === currentSession.userId; }); loadDashboard(); showNotification('Welcome ' + currentSession.userName + '!'); checkPendingNotifications(); }
+    
+    function logoutUser() { currentSession = { loggedIn: false, userType: null, userId: null, userName: null, lastLogin: null }; currentMember = null; document.getElementById('loginPanel').style.display = 'block'; document.getElementById('dashboardContainer').style.display = 'none'; var modals = document.querySelectorAll('.modal'); for (var i = 0; i < modals.length; i++) modals[i].style.display = 'none'; closeDrilldownModal(); showNotification('Logged out successfully'); }
+    
+    function loadDashboard() { var role = currentSession.userType; if (role === 'member') loadMemberDashboard(); else if (role === 'leader') loadLeaderDashboard(); else if (role === 'admin') loadAdminDashboard(); else if (role === 'it') loadITDashboard(); }
+    
+    // ======================== MEMBER DASHBOARD ========================
+    function loadMemberDashboard() {
+        if (!currentMember) return;
+        var savingsAccounts = DB.savingsAccounts.filter(function(a) { return a.memberId === currentMember.id && a.status === 'active'; });
+        var totalSavingsBalance = 0;
+        for (var i = 0; i < savingsAccounts.length; i++) totalSavingsBalance += (savingsAccounts[i].balance || 0);
+        document.getElementById('mainBalanceDisplay').innerHTML = formatAmountWithCurrency(totalSavingsBalance);
+        
+        var memberLoans = DB.loans.filter(function(l) { return l.memberId === currentMember.id && (l.status === 'active' || l.status === 'completed'); });
+        var totalLoanDue = 0;
+        for (var i = 0; i < memberLoans.length; i++) { var l = memberLoans[i]; var due = (l.amount || 0) - (l.paidAmount || 0); if (due > 0) totalLoanDue += due; }
+        var loanDueSpan = document.getElementById('loanDueDisplay');
+        if (loanDueSpan) loanDueSpan.innerHTML = totalLoanDue > 0 ? '🏦 Loan Due: ' + formatAmountWithCurrency(totalLoanDue) : '🏦 No Active Loans';
+        
+        var leader = DB.members.find(function(m) { return m.id === currentMember.leaderId; });
+        var leaderNameSpan = document.getElementById('leaderNameDisplay');
+        if (leaderNameSpan) leaderNameSpan.innerHTML = leader ? '👤 Leader: ' + leader.name : '👤 Leader: Not Assigned';
+        
+        var procFeePaid = false;
+        for (var i = 0; i < memberLoans.length; i++) { if (memberLoans[i].procFeePaid) procFeePaid = true; }
+        
+        var regFeeStatus = '';
+        for (var i = 0; i < savingsAccounts.length; i++) {
+            var regPaid = DB.savingsTransactions.some(function(t) { return t.savingsId === savingsAccounts[i].id && t.type === 'reg'; });
+            if (!regPaid) { regFeeStatus = '<span class="fee-badge fee-unpaid">⚠ Reg Fee Due</span>'; break; }
+            else { regFeeStatus = '<span class="fee-badge fee-paid">✓ Reg Fee Paid</span>'; }
+        }
+        if (savingsAccounts.length === 0) regFeeStatus = '<span class="fee-badge fee-unpaid">No Account</span>';
+        
+        var procFeeDisplay = '⚙️ Proc Fee';
+        if (memberLoans.length > 0) { procFeeDisplay = procFeePaid ? '✓ Proc Fee Paid' : '⚠ Proc Fee Due'; }
+        else if (DB.requests.some(function(r) { return r.memberId === currentMember.id && r.status === 'pending'; })) { procFeeDisplay = '⏳ Pending Approval'; }
+        else { procFeeDisplay = 'Apply for Loan'; }
+        
+        var statsHtml = '';
+        statsHtml += '<div class="stat-card savings" onclick="showSavingsAccountsDrilldown()"><div class="stat-left"><h3>' + savingsAccounts.length + '</h3><p>Savings Accounts</p></div><div class="stat-right"><div class="amount">' + formatAmountWithCurrency(totalSavingsBalance) + '</div><div class="date">' + regFeeStatus + '</div></div></div>';
+        statsHtml += '<div class="stat-card loans" onclick="showLoansDrilldown()"><div class="stat-left"><h3>' + memberLoans.length + '</h3><p>Loans</p></div><div class="stat-right"><div class="amount">Due: ' + formatAmountWithCurrency(totalLoanDue) + '</div><div class="date">' + procFeeDisplay + '</div></div></div>';
+        document.getElementById('statsGrid').innerHTML = statsHtml;
+        document.getElementById('buttonGrid').innerHTML = '';
+    }
+    
+    // ======================== LEADER DASHBOARD ========================
+    function loadLeaderDashboard() { var teamMembers = DB.members.filter(m => m.type === 'member' && m.leaderId === currentMember.id); var teamIds = teamMembers.map(m => m.id); teamIds.push(currentMember.id); var teamAccounts = DB.savingsAccounts.filter(a => teamIds.indexOf(a.memberId) !== -1); var totalSavings = teamAccounts.reduce((s,a) => s + (a.balance||0), 0); document.getElementById('mainBalanceDisplay').innerHTML = "Team Management"; document.getElementById('loanDueDisplay').innerHTML = ''; document.getElementById('leaderNameDisplay').innerHTML = ''; var statsHtml = '<div class="stat-card members" onclick="showTeamMembersDrilldown()"><div class="stat-left"><h3>' + teamMembers.length + '</h3><p>Team Members</p></div><div class="stat-right"><div class="amount">' + formatAmountWithCurrency(totalSavings) + '</div><div class="date">Total Savings</div></div></div><div class="stat-card pending" onclick="openTransferRequestModal()"><div class="stat-left"><h3>' + DB.transferRequests.filter(t => t.status === 'pending').length + '</h3><p>Transfer Requests</p></div><div class="stat-right"><div class="amount">Pending</div><div class="date">Awaiting Action</div></div></div>'; document.getElementById('statsGrid').innerHTML = statsHtml; document.getElementById('buttonGrid').innerHTML = '<button class="btn-gradient" onclick="openLeaderMemberRegistration()">📝 Register Member</button><button class="btn-gradient btn-secondary" onclick="openTransferRequestModal()">🔄 Transfer Request</button><button class="btn-gradient" style="background:#0a84ff;" onclick="sendTeamReminder()">📧 Payment Reminder</button>'; }
+    
+    // ======================== ADMIN DASHBOARD ========================
+    function loadAdminDashboard() { 
+        var leaders = DB.members.filter(m => m.type === 'leader').length; var members = DB.members.filter(m => m.type === 'member').length; var accounts = DB.savingsAccounts.length; var activeLoans = DB.loans.filter(l => l.status === 'active').length; var pendingCount = pendingPayments.filter(p => p.status === 'pending').length; var pendingRequests = DB.requests.filter(r => r.status === 'pending').length; var transferCount = DB.transferRequests.filter(t => t.status === 'pending').length; var pendingAgreements = DB.loanAgreements.filter(a => a.status !== 'completed').length; var compTotal = DB.companyAccounts.reduce((s,a)=>s+(a.balance||0),0);
+        document.getElementById('mainBalanceDisplay').innerHTML = "Admin Control"; document.getElementById('loanDueDisplay').innerHTML = ''; document.getElementById('leaderNameDisplay').innerHTML = ''; 
+        var statsHtml = '<div class="stat-card members" onclick="showLeadersDrilldown()"><div class="stat-left"><h3>' + leaders + '</h3><p>Leaders</p></div><div class="stat-right"><div class="amount">⭐ Leadership</div><div class="date">Active</div></div></div><div class="stat-card members" onclick="showAllMembersDrilldown()"><div class="stat-left"><h3>' + members + '</h3><p>Members</p></div><div class="stat-right"><div class="amount">Active Users</div><div class="date">' + members + ' Total</div></div></div><div class="stat-card savings" onclick="showAllAccountsDrilldown()"><div class="stat-left"><h3>' + accounts + '</h3><p>Savings Accounts</p></div><div class="stat-right"><div class="amount">' + formatAmountWithCurrency(DB.savingsAccounts.reduce((s,a)=>s+(a.balance||0),0)) + '</div><div class="date">Total Balance</div></div></div><div class="stat-card loans" onclick="showAllLoansDrilldown()"><div class="stat-left"><h3>' + activeLoans + '</h3><p>Active Loans</p></div><div class="stat-right"><div class="amount">Due: ' + formatAmountWithCurrency(DB.loans.reduce((s,l)=>s+((l.amount||0)-(l.paidAmount||0)),0)) + '</div><div class="date">Outstanding</div></div></div><div class="stat-card savings" onclick="showCompanyAccounts()"><div class="stat-left"><h3>' + DB.companyAccounts.length + '</h3><p>Company Accounts</p></div><div class="stat-right"><div class="amount">' + formatAmountWithCurrency(compTotal) + '</div><div class="date">Total Balance</div></div></div>';
+        if (pendingCount > 0) statsHtml += '<div class="stat-card pending" onclick="openPaymentApproval()"><div class="stat-left"><h3>' + pendingCount + '</h3><p>Pending Payments</p></div><div class="stat-right"><div class="amount">⚠️ Action Required</div><div class="date">Awaiting Approval</div></div></div>';
+        if (pendingRequests > 0) statsHtml += '<div class="stat-card pending" onclick="openLoanApproval()"><div class="stat-left"><h3>' + pendingRequests + '</h3><p>Loan Requests</p></div><div class="stat-right"><div class="amount">⚠️ Review</div><div class="date">Pending</div></div></div>';
+        if (pendingAgreements > 0) statsHtml += '<div class="stat-card pending" onclick="viewAdminPendingAgreements()"><div class="stat-left"><h3>' + pendingAgreements + '</h3><p>Agreements Pending</p></div><div class="stat-right"><div class="amount">⚠️ Signatures Needed</div><div class="date">Action Required</div></div></div>';
+        if (transferCount > 0) statsHtml += '<div class="stat-card pending" onclick="openTransferApproval()"><div class="stat-left"><h3>' + transferCount + '</h3><p>Transfer Requests</p></div><div class="stat-right"><div class="amount">⚠️ Review</div><div class="date">Pending</div></div></div>';
+        document.getElementById('statsGrid').innerHTML = statsHtml;
+        document.getElementById('buttonGrid').innerHTML = '<button class="btn-gradient" onclick="openSettings()">⚙️ Settings</button><button class="btn-gradient" style="background:#0a84ff;" onclick="syncToCloud()">☁️ Sync Cloud</button><button class="btn-gradient btn-secondary" onclick="openLoanApproval()">✅ Loan Approval</button><button class="btn-gradient" style="background:#bf5af2;" onclick="openLeaderRegistrationModal()">⭐ Register Leader</button><button class="btn-gradient" onclick="openAccountModal()">💰 Open Account</button><button class="btn-gradient" style="background:#1abc9c;" onclick="openLedgerModal()">📒 Ledger</button><button class="btn-gradient btn-danger" onclick="openBackupRestoreModal()">💾 Backup/Restore</button><button class="btn-gradient" style="background:#e67e22;" onclick="showCompanyAccounts()">🏢 Company Accounts</button>';
+    }
+    
+    // ======================== IT DASHBOARD ========================
+    function loadITDashboard() { 
+        loadAdminDashboard(); 
+        var itBtns = '<button class="btn-gradient" style="background:#bf5af2;" onclick="showAllTransactionsWithEdit()">📊 Transactions (Edit)</button>';
+        itBtns += '<button class="btn-gradient btn-danger" onclick="showAllMembersWithEdit()">👥 Members (Edit)</button>';
+        itBtns += '<button class="btn-gradient" style="background:#0a84ff;" onclick="showAllAccountsWithEdit()">💰 Accounts (Edit)</button>';
+        itBtns += '<button class="btn-gradient" style="background:#ff9f0a;" onclick="showAllLoansWithEdit()">📋 Loans (Edit)</button>';
+        itBtns += '<button class="btn-gradient" style="background:#8e44ad;" onclick="showLeaderManagement()">⭐ Leader Management</button>';
+        itBtns += '<button class="btn-gradient" style="background:#2ecc71;" onclick="openLeaderMemberRegistration()">📝 Register Member</button>';
+        itBtns += '<button class="btn-gradient" style="background:#e67e22;" onclick="showAllAgreementsForIT()">📜 Agreements (Edit/Delete)</button>';
+        document.getElementById('buttonGrid').innerHTML += itBtns; 
+    }
+    
+    // ======================== COMPANY ACCOUNTS CRUD ========================
+    function showCompanyAccounts() { var html = '<div><button class="btn-save" onclick="openCompanyAccountModal()">+ Add Company Account</button></div>'; DB.companyAccounts.forEach(function(acc) { html += '<div class="company-account-card"><div><strong>' + acc.name + '</strong><br>Balance: ' + formatAmountWithCurrency(acc.balance) + '<br>Created: ' + new Date(acc.created).toLocaleDateString() + '</div><div><button class="btn-sm btn-warning" onclick="editCompanyAccount(\'' + acc.id + '\')">Edit</button> <button class="btn-sm btn-reject" onclick="deleteCompanyAccount(\'' + acc.id + '\')">Delete</button> <button class="receipt-btn" onclick="showCompanyStatement(\'' + acc.id + '\')">Statement</button></div></div>'; }); openDrilldownModal('🏢 Company Accounts', html); }
+    function openCompanyAccountModal(acc) { if(acc){ document.getElementById('compAccName').value = acc.name; document.getElementById('compAccBalance').value = acc.balance; window.editCompId = acc.id; } else { document.getElementById('compAccName').value = ''; document.getElementById('compAccBalance').value = 0; window.editCompId = null; } openModal('companyAccountModal'); }
+    function saveCompanyAccount() { var name = document.getElementById('compAccName').value.trim(); var balance = parseFloat(document.getElementById('compAccBalance').value); if(!name) return; if(window.editCompId){ var acc = DB.companyAccounts.find(function(a){return a.id===window.editCompId;}); if(acc){ acc.name=name; acc.balance=balance; } } else { DB.companyAccounts.push({ id:'COMP'+Date.now(), name:name, balance:balance, created:new Date().toISOString() }); } saveDataToLocal(); saveAllDataToFirestore(); closeModal('companyAccountModal'); showCompanyAccounts(); }
+    function editCompanyAccount(id){ var acc = DB.companyAccounts.find(function(a){return a.id===id;}); if(acc) openCompanyAccountModal(acc); }
+    function deleteCompanyAccount(id){ if(confirm('Delete account?')){ DB.companyAccounts = DB.companyAccounts.filter(function(a){return a.id!==id;}); saveDataToLocal(); saveAllDataToFirestore(); showCompanyAccounts(); } }
+    function showCompanyStatement(accId){ var acc = DB.companyAccounts.find(function(a){return a.id===accId;}); var html = '<div class="stmt-box" id="printArea"><div class="stmt-header"><h2>' + acc.name + '</h2><p>' + DB.conf.name + ' - Company Account Statement</p></div><div class="info"><div><strong>Account Name:</strong><br>' + acc.name + '</div><div><strong>Balance:</strong><br>' + formatAmountWithCurrency(acc.balance) + '</div><div><strong>Created:</strong><br>' + new Date(acc.created).toLocaleString() + '</div></div><div class="footer">Generated: ' + new Date().toLocaleString() + '</div></div><div class="no-print" style="margin-top:15px;"><button class="btn-print" onclick="window.print()">🖨️ PRINT STATEMENT</button></div>'; openDrilldownModal('📄 Statement: ' + acc.name, html); }
+    
+    // ======================== PAYMENT APPROVAL SYSTEM (FIRESTORE VERSION) ========================
+    function openPaymentApproval() { 
+        var pending = pendingPayments.filter(p => p.status === 'pending'); 
+        if (pending.length === 0) { showNotification('📭 No pending payments', 'alert'); openDrilldownModal('💳 Pending Payments', '<div style="text-align:center;padding:40px;">✨ No pending payments</div>'); return; } 
+        var html = ''; 
+        for (var i = 0; i < pending.length; i++) { 
+            var p = pending[i]; 
+            var typeDisplay = p.type === 'dep' ? 'Deposit' : (p.type === 'emi' ? 'EMI Payment' : (p.type === 'reg' ? 'Registration Fee' : (p.type === 'proc' ? 'Processing Fee' : p.type))); 
+            html += '<div class="item-card"><div><strong>' + p.memberName + '</strong><br><small>' + typeDisplay + '</small><br>' + formatAmountWithCurrency(p.amount) + (p.emiNumber ? '<br>EMI #' + p.emiNumber : '') + (p.dueMonth ? '<br>Month: ' + p.dueMonth : '') + '</div><div><button class="btn-sm btn-approve" onclick="approvePayment(\'' + p.id + '\')">✅ Approve</button><button class="btn-sm btn-reject" onclick="rejectPayment(\'' + p.id + '\')">❌ Reject</button></div></div>'; 
+        } 
+        openDrilldownModal('💳 Pending Payments (' + pending.length + ')', html); 
+    }
+    
+    async function approvePayment(paymentId) { 
+        var payment = pendingPayments.find(p => p.id === paymentId); 
+        if (payment && payment.status === 'pending') { 
+            payment.status = 'approved'; 
+            if (payment.type === 'dep' || payment.type === 'reg') { 
+                var savingsAccount = DB.savingsAccounts.find(a => a.id === payment.savingsId); 
+                if (savingsAccount && payment.type === 'dep') savingsAccount.balance += payment.amount; 
+                DB.savingsTransactions.push({ id: 'STXN' + Date.now(), savingsId: payment.savingsId, memberId: payment.memberId, type: payment.type, amount: payment.amount, reference: payment.description, monthLabel: payment.dueMonth, date: new Date().toISOString(), dateTime: new Date().toISOString() }); 
+            } else if (payment.type === 'proc' || payment.type === 'emi') { 
+                var loan = DB.loans.find(l => l.id === payment.loanId); 
+                if (loan) { 
+                    if (payment.type === 'proc') { loan.procFeePaid = true; } 
+                    else if (payment.type === 'emi') { 
+                        loan.paidAmount = (loan.paidAmount || 0) + payment.amount; 
+                        loan.paidEmis = Math.floor(loan.paidAmount / (loan.emiAmount || DB.conf.emi)); 
+                        loan.nextEmiDue = loan.paidEmis + 1;
+                    } 
+                } 
+                DB.loanTransactions.push({ id: 'LTXN' + Date.now(), loanId: payment.loanId, memberId: payment.memberId, type: payment.type, amount: payment.amount, emiNumber: payment.emiNumber, reference: payment.description, date: new Date().toISOString(), dateTime: new Date().toISOString() }); 
+            } 
+            pendingPayments = pendingPayments.filter(p => p.id !== paymentId);
+            saveDataToLocal();
+            await saveAllDataToFirestore();
+            showNotification('✅ Payment approved! Synced to Firestore.', 'alert'); 
+            openPaymentApproval(); 
+            loadDashboard(); 
+        } 
+    }
+    
+    async function rejectPayment(paymentId) { 
+        pendingPayments = pendingPayments.filter(p => p.id !== paymentId); 
+        saveDataToLocal();
+        await saveAllDataToFirestore();
+        showNotification('❌ Payment rejected. Update synced.', 'alert'); 
+        openPaymentApproval(); 
+    }
+    
+    // ======================== LOAN REQUEST & APPROVAL ========================
+    function openLoanRequestModal() { 
+        var accounts = DB.savingsAccounts.filter(a => a.memberId === currentMember.id && a.status === 'active'); 
+        if(accounts.length===0){ alert('No active savings accounts found.'); return; } 
+        var select = document.getElementById('loanAccount'); 
+        select.innerHTML = ''; 
+        for(var i=0;i<accounts.length;i++){ 
+            var hasActiveLoan = DB.loans.some(l => l.linkedSavingsId === accounts[i].id && l.status === 'active'); 
+            var hasPendingRequest = DB.requests.some(r => r.linkedSavingsId === accounts[i].id && r.status === 'pending'); 
+            var disabled = (hasActiveLoan || hasPendingRequest) ? 'disabled' : ''; 
+            var warning = ''; 
+            if(hasActiveLoan) warning = ' (Active Loan Exists)'; 
+            else if(hasPendingRequest) warning = ' (Request Pending)'; 
+            select.innerHTML += '<option value="'+accounts[i].id+'" '+disabled+'>#'+accounts[i].id.slice(-6)+' - Balance: '+formatAmountWithCurrency(accounts[i].balance)+warning+'</option>'; 
+        } 
+        openModal('loanRequestModal'); 
+        calculateMaxLoanAmount(); 
+    }
+    
+    function calculateMaxLoanAmount() { 
+        var savingsId = document.getElementById('loanAccount').value; 
+        var account = DB.savingsAccounts.find(a=>a.id===savingsId); 
+        if(!account) return; 
+        var hasActiveLoan = DB.loans.some(l => l.linkedSavingsId === savingsId && l.status === 'active'); 
+        var hasPendingRequest = DB.requests.some(r => r.linkedSavingsId === savingsId && r.status === 'pending'); 
+        if(hasActiveLoan || hasPendingRequest){ 
+            document.getElementById('loanEligibility').innerHTML = '<div class="not-eligible">✗ NOT ELIGIBLE.<br>' + (hasActiveLoan ? 'Active loan exists.' : 'Loan request pending.') + '</div>'; 
+            document.getElementById('loanAmount').disabled = true; 
+            return; 
+        } 
+        var openDate = new Date(account.openDateTime||account.openDate); 
+        var monthsActive = (new Date().getFullYear()-openDate.getFullYear())*12+(new Date().getMonth()-openDate.getMonth()); 
+        var requiredBalance = DB.conf.dep * DB.conf.ml; 
+        var eligibleAmount = 0; 
+        if(monthsActive<=6) eligibleAmount=(account.balance||0)*DB.conf.tier1/100; 
+        else if(monthsActive<=12) eligibleAmount=(account.balance||0)*DB.conf.tier2/100; 
+        else if(monthsActive<=18) eligibleAmount=(account.balance||0)*DB.conf.tier3/100; 
+        else if(monthsActive<=24) eligibleAmount=(account.balance||0)*DB.conf.tier4/100; 
+        else eligibleAmount=(account.balance||0)*DB.conf.tier5/100; 
+        var maxEligible = Math.min(eligibleAmount, DB.conf.max); 
+        var isEligible = monthsActive >= DB.conf.ml && (account.balance||0) >= requiredBalance && maxEligible > 0; 
+        if(isEligible){ 
+            document.getElementById('loanEligibility').innerHTML = '<div style="background:rgba(46,204,113,0.2); color:#2ecc71; padding:12px; border-radius:8px;">✓ ELIGIBLE! Max Loan: '+formatAmountWithCurrency(maxEligible)+'</div>'; 
+            document.getElementById('loanAmount').max = maxEligible; 
+            document.getElementById('loanAmount').disabled = false; 
+        } else { 
+            var reason = ''; 
+            if(monthsActive < DB.conf.ml) reason = 'Need ' + DB.conf.ml + '+ months account age.'; 
+            else if((account.balance||0) < requiredBalance) reason = 'Minimum savings of ' + formatAmountWithCurrency(requiredBalance) + ' required.'; 
+            else if(maxEligible <= 0) reason = 'Insufficient savings balance.'; 
+            document.getElementById('loanEligibility').innerHTML = '<div class="not-eligible">✗ NOT ELIGIBLE<br><small>' + reason + '</small></div>'; 
+            document.getElementById('loanAmount').disabled = true; 
+        } 
+    }
+    
+    async function submitLoanRequest() { 
+        var savingsId = document.getElementById('loanAccount').value; 
+        var amount = parseFloat(document.getElementById('loanAmount').value); 
+        var purpose = document.getElementById('loanPurpose').value; 
+        if(!savingsId || amount<=0 || !purpose){ alert('Please fill all fields'); return; } 
+        DB.requests.push({ id:'REQ'+Date.now(), memberId:currentMember.id, memberName:currentMember.name, linkedSavingsId: savingsId, amount: amount, purpose: purpose, requestDate:new Date().toISOString(), status:'pending' }); 
+        saveDataToLocal(); 
+        await saveAllDataToFirestore();
+        showNotification('Loan request submitted! Awaiting admin approval.', 'alert'); 
+        closeModal('loanRequestModal'); 
+        loadDashboard(); 
+    }
+    
+    function openLoanApproval() { 
+        var pendingRequests = DB.requests.filter(r => r.status === 'pending'); 
+        if (pendingRequests.length === 0) { alert('No pending loan requests'); return; } 
+        var html = ''; 
+        for (var i = 0; i < pendingRequests.length; i++) { 
+            var r = pendingRequests[i]; 
+            html += '<div class="item-card"><div><strong>' + r.memberName + '</strong><br>Amount: ' + formatAmountWithCurrency(r.amount) + '<br>Purpose: ' + r.purpose + '</div><div><button class="btn-sm btn-approve" onclick="approveLoanWithAgreement(\'' + r.id + '\')">Approve & Generate Agreement</button><button class="btn-sm btn-reject" onclick="rejectLoan(\'' + r.id + '\')">Reject</button></div></div>'; 
+        } 
+        openDrilldownModal('📋 Loan Requests', html); 
+    }
+    
+    async function rejectLoan(requestId) { 
+        var req = DB.requests.find(r => r.id === requestId); 
+        if (req) { req.status = 'rejected'; saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Loan rejected'); openLoanApproval(); } 
+    }
+    
+    // ======================== LOAN AGREEMENT WITH DIGITAL SIGNATURE FLOW ========================
+    function approveLoan(requestId) { var req = DB.requests.find(function(r){return r.id===requestId;}); if(req && req.status==='pending'){ req.status = 'approved'; var agreementId = 'AGR'+Date.now(); DB.loanAgreements.push({ id: agreementId, requestId: req.id, memberId: req.memberId, memberName: req.memberName, amount: req.amount, linkedSavingsId: req.linkedSavingsId, status: 'pending_member', memberSignature: null, leaderSignature: null, agreementDate: new Date().toISOString() }); saveDataToLocal(); saveAllDataToFirestore(); showNotification('Loan approved. Agreement generated. Member must sign.', 'alert'); openLoanApproval(); } }
+    function viewPendingAgreements() { var pending = DB.loanAgreements.filter(function(a){return a.status !== 'completed';}); var html = ''; for(var i=0;i<pending.length;i++){ var a=pending[i]; html += '<div class="item-card"><div><strong>' + a.memberName + '</strong><br>Amount: ' + formatAmountWithCurrency(a.amount) + '<br>Status: ' + a.status + '</div><div>' + (a.status === 'pending_member' ? '<button class="btn-sm btn-warning" onclick="promptMemberSignature(\'' + a.id + '\')">Request Member Sign</button>' : (a.status === 'member_signed' ? '<button class="btn-sm btn-approve" onclick="promptLeaderSignature(\'' + a.id + '\')">Leader Witness</button>' : '')) + '</div></div>'; } openDrilldownModal('📜 Loan Agreements', html); }
+    function promptMemberSignature(agreementId){ var agreement = DB.loanAgreements.find(function(a){return a.id===agreementId;}); if(!agreement) return; document.getElementById('agreementContent').innerHTML = '<div class="signature-area" id="memberSignArea" onclick="captureSignature(\'member\')">✍️ Tap to Sign (Member)</div><input type="hidden" id="memberSigData"><p><strong>Loan Amount:</strong> ' + formatAmountWithCurrency(agreement.amount) + '</p><p><strong>Terms:</strong> I agree to repay the loan amount in monthly EMIs as per the schedule. I understand that defaulting on payments may affect my savings account.</p><p><strong>Date:</strong> ' + new Date().toLocaleDateString() + '</p>'; window.currentAgreementId = agreementId; window.signatureRole = 'member'; openModal('loanAgreementModal'); }
+    function promptLeaderSignature(agreementId){ var agreement = DB.loanAgreements.find(function(a){return a.id===agreementId;}); document.getElementById('agreementContent').innerHTML = '<div class="signature-area" id="leaderSignArea" onclick="captureSignature(\'leader\')">✍️ Tap to Sign as Witness (Leader)</div><input type="hidden" id="leaderSigData"><p><strong>Witnessing member signature for loan:</strong> ' + formatAmountWithCurrency(agreement.amount) + '</p><p><strong>Member:</strong> ' + agreement.memberName + '</p><p>I confirm that I have witnessed the member\'s signature and the loan agreement is valid.</p>'; window.currentAgreementId = agreementId; window.signatureRole = 'leader'; openModal('loanAgreementModal'); }
+    function captureSignature(role){ var canvas = document.createElement('canvas'); canvas.width = 300; canvas.height = 150; canvas.style.border = '1px solid white'; var ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0,0,canvas.width,canvas.height); ctx.fillStyle = '#000'; ctx.font = '20px Arial'; ctx.fillText('Signed: ' + new Date().toLocaleString(), 10, 80); ctx.font = '16px Arial'; ctx.fillText('IP: ' + (window.location.hostname || 'local'), 10, 120); var sigData = canvas.toDataURL(); if(role === 'member') document.getElementById('memberSigData').value = sigData; else document.getElementById('leaderSigData').value = sigData; showNotification('Signature captured digitally'); }
+    async function submitDigitalSignature(){ var agreement = DB.loanAgreements.find(function(a){return a.id===window.currentAgreementId;}); if(!agreement) return; if(window.signatureRole === 'member'){ var sig = document.getElementById('memberSigData').value; if(!sig){ alert('Please tap to sign'); return; } agreement.memberSignature = sig; agreement.status = 'member_signed'; saveDataToLocal(); await saveAllDataToFirestore(); closeModal('loanAgreementModal'); showNotification('Member signed. Awaiting leader witness.', 'alert'); viewPendingAgreements(); } else if(window.signatureRole === 'leader'){ var sig = document.getElementById('leaderSigData').value; if(!sig){ alert('Please witness sign'); return; } agreement.leaderSignature = sig; agreement.status = 'completed'; var existingLoan = DB.loans.find(function(l){return l.linkedSavingsId===agreement.linkedSavingsId;}); if(!existingLoan){ DB.loans.push({ id:'LOAN'+Date.now(), memberId:agreement.memberId, memberName:agreement.memberName, linkedSavingsId:agreement.linkedSavingsId, amount:agreement.amount, paidAmount:0, status:'active', procFeePaid:false, approvalDate:new Date().toISOString().split('T')[0], approvalDateTime:new Date().toISOString(), emiAmount:DB.conf.emi, totalEmis:Math.ceil(agreement.amount/DB.conf.emi), paidEmis:0, nextEmiDue:1 }); } saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Loan fully executed. EMI schedule attached.', 'alert'); loadDashboard(); closeModal('loanAgreementModal'); } }
+    function viewAdminPendingAgreements() { DB.loanAgreements = DB.loanAgreements || []; var pending = DB.loanAgreements.filter(a=>a.status === 'leader_signed'); var html = ''; for(var a of pending) { html += '<div class="item-card"><div><strong>'+a.memberName+'</strong><br>Amount: '+formatAmountWithCurrency(a.amount)+'<br>Status: Awaiting Admin Signature</div><div><button class="btn-sm btn-approve" onclick="showAgreementForSigning(\''+a.id+'\', \'admin\')">Sign & Finalize</button></div></div>'; } openDrilldownModal('📄 Pending Agreements', html); }
+    function showAllAgreementsForIT() { DB.loanAgreements = DB.loanAgreements || []; var agreements = DB.loanAgreements; var html = '<div><button class="btn-save" onclick="createManualAgreement()">+ Create New Agreement</button></div>'; for(var a of agreements) { var loan = DB.loans.find(l=>l.linkedSavingsId===a.linkedSavingsId); html += '<div class="item-card"><div><strong>Loan #'+(loan?loan.id.slice(-6):'N/A')+'</strong><br>Member: '+a.memberName+'<br>Amount: '+formatAmountWithCurrency(a.amount)+'<br>Status: '+a.status+'</div><div><button class="btn-sm btn-warning" onclick="editAgreement(\''+a.id+'\')">Edit</button> <button class="btn-sm btn-reject" onclick="deleteAgreement(\''+a.id+'\')">Delete</button> <button class="btn-sm btn-approve" onclick="viewAgreementDetails(\''+a.id+'\')">View</button></div></div>'; } openDrilldownModal('📜 Agreements Management', html); }
+    function createManualAgreement() { var loans = DB.loans; var selectHtml = '<select id="manualLoanSelect"><option value="">-- Select Loan --</option>'; for(var l of loans) selectHtml += '<option value="'+l.id+'">Loan #'+l.id.slice(-6)+' - '+l.memberName+' - '+formatAmountWithCurrency(l.amount)+'</option>'; selectHtml += '</select><button class="btn-save" onclick="createAgreementFromLoan()">Create</button>'; openDrilldownModal('Create Agreement', selectHtml); }
+    async function createAgreementFromLoan() { var loanId = document.getElementById('manualLoanSelect').value; var loan = DB.loans.find(l=>l.id===loanId); if(loan) { DB.loanAgreements = DB.loanAgreements || []; var existing = DB.loanAgreements.find(a=>a.linkedSavingsId===loan.linkedSavingsId); if(existing) { alert('Agreement already exists'); return; } var agreement = { id: 'AGR'+Date.now(), memberId: loan.memberId, memberName: loan.memberName, amount: loan.amount, linkedSavingsId: loan.linkedSavingsId, purpose: 'Loan Agreement', status: 'pending_member', memberSignature: null, leaderSignature: null, adminSignature: null, generatedDate: new Date().toISOString() }; DB.loanAgreements.push(agreement); saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Agreement created'); showAllAgreementsForIT(); } }
+    function editAgreement(agreementId) { var a = DB.loanAgreements.find(a=>a.id===agreementId); if(a) { var newAmt = prompt('Edit Loan Amount:', a.amount); if(newAmt) { a.amount = parseFloat(newAmt); saveDataToLocal(); saveAllDataToFirestore(); showAllAgreementsForIT(); } } }
+    function deleteAgreement(agreementId) { if(confirm('Delete this agreement?')) { DB.loanAgreements = DB.loanAgreements.filter(a=>a.id!==agreementId); saveDataToLocal(); saveAllDataToFirestore(); showAllAgreementsForIT(); } }
+    function viewAgreementDetails(agreementId) { var a = DB.loanAgreements.find(a=>a.id===agreementId); if(a) { var html = '<div class="agreement-letter"><h3>Loan Agreement Details</h3><p><strong>Member:</strong> '+a.memberName+'</p><p><strong>Amount:</strong> '+formatAmountWithCurrency(a.amount)+'</p><p><strong>Status:</strong> '+a.status+'</p><p><strong>Generated:</strong> '+new Date(a.generatedDate).toLocaleString()+'</p>'+(a.memberSignature ? '<p>✓ Member Signed</p>' : '<p>✗ Not Signed</p>')+(a.leaderSignature ? '<p>✓ Leader Witnessed</p>' : '<p>✗ Not Witnessed</p>')+(a.adminSignature ? '<p>✓ Admin Finalized</p>' : '<p>✗ Not Finalized</p>')+'</div>'; openDrilldownModal('Agreement Details', html); } }
+    function showAgreementForSigning(agreementId, role) { var agreement = DB.loanAgreements.find(a=>a.id===agreementId); if(!agreement) return; var canSign = (role === 'member' && agreement.status === 'pending_member') || (role === 'leader' && agreement.status === 'member_signed') || (role === 'admin' && agreement.status === 'leader_signed'); if(!canSign) { showNotification('Agreement not ready for your signature', 'error'); return; } var html = '<div class="agreement-letter"><h3>LOAN AGREEMENT</h3><p><strong>Member:</strong> '+agreement.memberName+'</p><p><strong>Amount:</strong> '+formatAmountWithCurrency(agreement.amount)+'</p><p><strong>EMI:</strong> '+formatAmountWithCurrency(DB.conf.emi)+'</p>'+(agreement.memberSignature ? '<p>✓ Member Signed on '+new Date(agreement.memberSignatureDate).toLocaleDateString()+'</p>' : '<p>⚠ Awaiting Member Signature</p>')+(agreement.leaderSignature ? '<p>✓ Leader Witnessed on '+new Date(agreement.leaderSignatureDate).toLocaleDateString()+'</p>' : '<p>⚠ Awaiting Leader Witness</p>')+'</div>'; document.getElementById('agreementViewContent').innerHTML = html; var btns = document.getElementById('agreementActionButtons'); btns.innerHTML = '<button class="btn-save" onclick="openSignaturePad(\''+agreementId+'\', \''+role+'\')">✍️ Sign Agreement</button><button class="btn-cancel" onclick="closeModal(\'agreementViewModal\')">Close</button>'; openModal('agreementViewModal'); }
+    var signaturePad = null, currentSignatureAgreementId = null, currentSignatureRole = null;
+    function openSignaturePad(agreementId, role) { closeModal('agreementViewModal'); currentSignatureAgreementId = agreementId; currentSignatureRole = role; var canvas = document.getElementById('signatureCanvas'); if (signaturePad) signaturePad.clear(); else { signaturePad = new SignaturePad(canvas, { backgroundColor: 'white', penColor: 'black' }); } openModal('signatureModal'); }
+    function clearSignature() { if(signaturePad) signaturePad.clear(); }
+    function closeSignatureModal() { closeModal('signatureModal'); }
+    async function saveSignature() { if(signaturePad && !signaturePad.isEmpty()) { var signatureData = signaturePad.toDataURL(); var agreement = DB.loanAgreements.find(a=>a.id===currentSignatureAgreementId); if(agreement) { if(currentSignatureRole === 'member') { agreement.memberSignature = signatureData; agreement.memberSignatureDate = new Date().toISOString(); agreement.status = 'member_signed'; saveDataToLocal(); await saveAllDataToFirestore(); var leader = DB.members.find(m=>m.id === agreement.leaderId) || DB.members.find(m=>m.type==='leader'); if(leader) addNotification(leader.id, '📄 Witness Required', 'Please witness the loan agreement for '+agreement.memberName, { type: 'agreement', agreementId: agreement.id, role: 'leader' }); showNotification('Your signature saved! Leader will witness.', 'alert'); } else if(currentSignatureRole === 'leader') { agreement.leaderSignature = signatureData; agreement.leaderSignatureDate = new Date().toISOString(); agreement.status = 'leader_signed'; saveDataToLocal(); await saveAllDataToFirestore(); addNotification('admin1', '📄 Admin Signature Required', 'Loan agreement for '+agreement.memberName+' needs your final signature', { type: 'agreement', agreementId: agreement.id, role: 'admin' }); showNotification('Witness signature saved! Admin will finalize.', 'alert'); } else if(currentSignatureRole === 'admin') { agreement.adminSignature = signatureData; agreement.adminSignatureDate = new Date().toISOString(); agreement.status = 'completed'; var loan = { id: 'LOAN'+Date.now(), memberId: agreement.memberId, memberName: agreement.memberName, linkedSavingsId: agreement.linkedSavingsId, amount: agreement.amount, paidAmount: 0, status: 'active', procFeePaid: false, approvalDate: new Date().toISOString(), emiAmount: DB.conf.emi, totalEmis: Math.ceil(agreement.amount/DB.conf.emi), paidEmis: 0, nextEmiDue: 1 }; DB.loans.push(loan); saveDataToLocal(); await saveAllDataToFirestore(); addNotification(agreement.memberId, '🎉 Loan Approved!', 'Your loan of '+formatAmountWithCurrency(agreement.amount)+' has been approved.', null); showNotification('Agreement finalized! Loan activated.', 'alert'); } closeSignatureModal(); loadDashboard(); } } else alert('Please provide signature'); }
+    
+    function sendAgreementToMember(agreementId) { var agreement = DB.loanAgreements.find(a=>a.id===agreementId); if(agreement) { addNotification(agreement.memberId, '📄 Loan Agreement Ready', 'Please review and sign your loan agreement.', { type: 'agreement', agreementId: agreement.id, role: 'member' }); showNotification('Agreement sent to member!', 'alert'); closeModal('agreementViewModal'); } }
+    function showAgreementLetter(agreementId) { var agreement = DB.loanAgreements.find(a=>a.id===agreementId); if(!agreement) return; var html = '<div class="agreement-letter"><h3 style="text-align:center;">LOAN AGREEMENT LETTER</h3><hr><p><strong>Date:</strong> '+new Date().toLocaleDateString()+'</p><p><strong>Member Name:</strong> '+agreement.memberName+'</p><p><strong>Loan Amount:</strong> '+formatAmountWithCurrency(agreement.amount)+'</p><p><strong>Purpose:</strong> '+ (agreement.purpose || 'Not specified')+'</p><p><strong>Terms:</strong> The loan shall be repaid in monthly EMIs of '+formatAmountWithCurrency(DB.conf.emi)+'.</p><p><strong>Processing Fee:</strong> '+formatAmountWithCurrency(DB.conf.proc)+'</p><div style="margin-top:20px;"><p>_____________________<br>Member Signature</p><p>_____________________<br>Leader Witness</p><p>_____________________<br>Admin Seal</p></div></div>'; document.getElementById('agreementViewContent').innerHTML = html; var btns = document.getElementById('agreementActionButtons'); btns.innerHTML = '<button class="btn-save" onclick="sendAgreementToMember(\''+agreementId+'\')">📧 Send to Member</button><button class="btn-cancel" onclick="closeModal(\'agreementViewModal\')">Close</button>'; openModal('agreementViewModal'); }
+    function approveLoanWithAgreement(requestId) { var req = DB.requests.find(r=>r.id===requestId); if(req && req.status==='pending') { req.status = 'approved'; var agreement = { id: 'AGR'+Date.now(), requestId: req.id, memberId: req.memberId, memberName: req.memberName, amount: req.amount, linkedSavingsId: req.linkedSavingsId, purpose: req.purpose, status: 'pending_member', memberSignature: null, leaderSignature: null, adminSignature: null, generatedDate: new Date().toISOString() }; DB.loanAgreements = DB.loanAgreements || []; DB.loanAgreements.push(agreement); saveDataToLocal(); saveAllDataToFirestore(); showAgreementLetter(agreement.id); } }
+    
+    // ======================== SAVINGS ACCOUNTS DRILLDOWN ========================
+    function showSavingsAccountsDrilldown() { if (!currentMember) return; var accounts = DB.savingsAccounts.filter(a => a.memberId === currentMember.id && a.status === 'active'); var html = '<div style="padding:10px;">'; for (var i = 0; i < accounts.length; i++) { var a = accounts[i]; var hasActiveLoan = DB.loans.some(l => l.linkedSavingsId === a.id && l.status === 'active'); var regPaid = DB.savingsTransactions.some(t => t.savingsId === a.id && t.type === 'reg'); html += '<div class="item-card" onclick="showSavingsAccountStatement(\'' + a.id + '\')"><div><strong>Account #' + a.id.slice(-6) + '</strong><br><span style="color:#888;">Opened: ' + new Date(a.openDateTime||a.openDate).toLocaleDateString() + '</span>' + (hasActiveLoan ? '<br><span class="loan-badge">Active Loan Linked</span>' : '') + '<br><span style="font-size:11px;">Reg Fee: ' + (regPaid ? '<span class="status-paid">✓ Paid</span>' : '<span class="status-pending">⚠ Due</span>') + '</span></div><div style="color:#30d158;">' + formatAmountWithCurrency(a.balance) + '</div></div>'; } html += '</div>'; openDrilldownModal('💰 My Savings Accounts', html); }
+    
+    function showSavingsAccountStatement(accountId) { 
+        var account = DB.savingsAccounts.find(a=>a.id===accountId); 
+        var transactions = DB.savingsTransactions.filter(t=>t.savingsId===accountId).sort((a,b)=>new Date(b.dateTime||b.date)-new Date(a.dateTime||a.date)); 
+        var totalDeposit = transactions.filter(t=>t.type==='dep').reduce((s,t)=>s+(t.amount||0),0); 
+        var totalWithdrawal = transactions.filter(t=>t.type==='wd').reduce((s,t)=>s+(t.amount||0),0); 
+        var regFeePaid = transactions.some(t=>t.type==='reg');
+        
+        var paidDeposits = transactions.filter(t=>t.type==='dep').map(function(t) { return { monthLabel: t.monthLabel, transaction: t }; });
+        var accountOpenDate = new Date(account.openDateTime || account.openDate);
+        var depositScheduleHtml = '<div style="margin-top:15px;"><strong style="color:white;">📅 Deposit Schedule (Sequential)</strong></div><div style="background: #1a1f2e; padding: 15px; margin-bottom: 15px; border-radius: 8px;">';
+        var nextDue = getNextDueDepositMonth(accountOpenDate, paidDeposits);
+        
+        if (!regFeePaid) {
+            depositScheduleHtml += '<div class="transaction-item" style="background: rgba(231,76,60,0.2);"><div><strong>⚠️ Registration Fee Required</strong><br><small>Pay registration fee first to start deposits</small></div><div><button onclick="submitRegFeePayment(\''+account.id+'\')" class="btn-pay">Pay Registration Fee ' + formatAmountWithCurrency(DB.conf.reg) + '</button></div></div>';
+        } else if (nextDue) {
+            var isSubmitted = pendingPayments.some(p => p.savingsId === account.id && p.type === 'dep' && p.dueMonth === nextDue.monthLabel && p.status === 'pending');
+            depositScheduleHtml += '<div class="transaction-item" style="margin-bottom: 8px;"><div><strong>' + nextDue.monthLabel + '</strong><br><small>Next Due Monthly Deposit</small></div><div>' + formatAmountWithCurrency(DB.conf.dep);
+            if (isSubmitted) { depositScheduleHtml += ' <span class="status-submitted">⏳ SUBMITTED</span>'; }
+            else { depositScheduleHtml += ' <button onclick="submitSequentialDepositPayment(\'' + account.id + '\', \'' + nextDue.monthLabel + '\')" class="btn-pay" style="margin-left:8px;">Pay Now</button>'; }
+            depositScheduleHtml += '</div></div>';
+            
+            var tempDate = new Date(nextDue.dueDate);
+            for (var f = 1; f <= 5; f++) {
+                tempDate.setMonth(tempDate.getMonth() + 1);
+                var futureMonthLabel = formatMonthYear(tempDate);
+                depositScheduleHtml += '<div class="transaction-item disabled-payment" style="opacity:0.5;"><div><strong>' + futureMonthLabel + '</strong><br><small>Locked - Pay ' + nextDue.monthLabel + ' first</small></div><div>' + formatAmountWithCurrency(DB.conf.dep) + ' <span style="color:#888;">(Locked)</span></div></div>';
+            }
+        } else {
+            depositScheduleHtml += '<div style="padding:10px; text-align:center; color:#2ecc71;">✅ All deposits are up to date!</div>';
+        }
+        depositScheduleHtml += '</div>';
+        
+        var paidDepositsHtml = '';
+        if (paidDeposits.length > 0) {
+            paidDepositsHtml = '<div style="margin-top:15px;"><strong style="color:white;">📋 Paid Deposits History</strong></div>';
+            for (var i = 0; i < paidDeposits.length; i++) {
+                var pd = paidDeposits[i];
+                paidDepositsHtml += '<div class="transaction-item"><div><strong>' + pd.monthLabel + '</strong><br><small>Monthly Deposit</small></div><div><span class="status-paid">✓ PAID</span> ' + formatAmountWithCurrency(DB.conf.dep) + ' <button onclick="showReceipt(\'' + pd.transaction.id + '\', \'savings\')" class="receipt-btn">📄 Receipt</button></div></div>';
+            }
+        }
+        
+        var html = '<div style="margin-top:15px; background:#1a1f2e; padding:20px; border-radius:8px;"><div><strong>Savings Account #' + account.id.slice(-6) + '</strong><br>Balance: ' + formatAmountWithCurrency(account.balance) + '</div><div>Total Deposits: ' + formatAmountWithCurrency(totalDeposit) + ' | Withdrawals: ' + formatAmountWithCurrency(totalWithdrawal) + '</div><div>Registration Fee: ' + (regFeePaid ? '<span class="status-paid">✓ PAID</span>' : '<span class="status-pending">⚠ NOT PAID</span>') + '</div>' + depositScheduleHtml + paidDepositsHtml + '<br><strong>📋 All Transactions</strong>';
+        if(transactions.length===0){ html += '<div style="text-align:center; padding:20px; color:#888;">No transactions</div>'; } 
+        else { for(var i=0;i<Math.min(transactions.length,20);i++){ var t=transactions[i]; var typeName = t.type==='dep'?'Deposit':(t.type==='wd'?'Withdrawal':'Registration Fee'); var amountColor = t.type==='dep'?'#2ecc71':'#ff6b6b'; var sign = t.type==='dep'?'+':'-'; html += '<div class="transaction-item"><div><span style="color:white;">' + typeName + '</span><br><small>' + new Date(t.dateTime||t.date).toLocaleDateString() + '</small>' + (t.monthLabel ? '<br><small>' + t.monthLabel + '</small>' : '') + '</div><div style="color:'+amountColor+'; font-weight:bold;">' + sign + ' ' + formatAmountWithCurrency(t.amount) + '</div><button onclick="showReceipt(\'' + t.id + '\', \'savings\')" class="receipt-btn">📄 Receipt</button></div>'; } } 
+        html += '<button class="btn-cancel" style="margin-top:15px;" onclick="showSavingsAccountsDrilldown()">← Back</button></div>'; 
+        openDrilldownModal('📄 Savings Statement', html); 
+    }
+    
+    async function submitRegFeePayment(savingsId) { 
+        if(pendingPayments.some(p=>p.memberId===currentMember.id && p.status==='pending')){ alert('You already have a pending payment.'); return; } 
+        var alreadyPaid = DB.savingsTransactions.some(t => t.savingsId === savingsId && t.type === 'reg'); 
+        if(alreadyPaid){ alert('Registration fee already paid!'); showSavingsAccountsDrilldown(); return; } 
+        pendingPayments.push({ id:'PAY'+Date.now(), memberId:currentMember.id, memberName:currentMember.name, savingsId: savingsId, type: 'reg', amount: DB.conf.reg, description: 'Registration Fee', requestDate:new Date().toISOString(), status:'pending' }); 
+        saveDataToLocal(); 
+        await saveAllDataToFirestore();
+        showNotification('✅ Registration Fee request submitted! Waiting for admin approval.', 'alert'); 
+        showSavingsAccountStatement(savingsId); 
+    }
+    
+    async function submitSequentialDepositPayment(savingsId, dueMonth) { 
+        if(pendingPayments.some(p=>p.memberId===currentMember.id && p.status==='pending')){ alert('You already have a pending payment.'); return; } 
+        pendingPayments.push({ id:'PAY'+Date.now(), memberId:currentMember.id, memberName:currentMember.name, savingsId: savingsId, type: 'dep', amount: DB.conf.dep, description: 'Deposit - ' + dueMonth, dueMonth: dueMonth, requestDate:new Date().toISOString(), status:'pending' }); 
+        saveDataToLocal(); 
+        await saveAllDataToFirestore();
+        showNotification('✅ Deposit request submitted for ' + dueMonth + '! Waiting for admin approval.', 'alert'); 
+        showSavingsAccountStatement(savingsId); 
+    }
+    
+    // ======================== LOANS DRILLDOWN ========================
+    function showLoansDrilldown() { if (!currentMember) return; var loans = DB.loans.filter(l => l.memberId === currentMember.id); var html = '<div style="padding:10px;">'; for (var i = 0; i < loans.length; i++) { var l = loans[i]; var due = (l.amount || 0) - (l.paidAmount || 0); var statusText = l.status === 'completed' ? '✅ CLOSED' : (due <= 0 ? '✅ PAID' : 'Active'); var linkedAccount = DB.savingsAccounts.find(a => a.id === l.linkedSavingsId); html += '<div class="item-card" onclick="showLoanDetails(\'' + l.id + '\')"><div><strong>Loan #' + l.id.slice(-6) + '</strong><br>Due: ' + formatAmountWithCurrency(due) + '<br><small>' + statusText + '</small><br><small style="color:#888;">Linked: #' + (linkedAccount ? linkedAccount.id.slice(-6) : 'N/A') + '</small></div><div>'+(l.procFeePaid ? '<span class="fee-badge fee-paid">✓ Proc Paid</span>' : '<span class="fee-badge fee-unpaid">⚠ Proc Due</span>')+'</div></div>'; } if(loans.length===0) html += '<div style="text-align:center;padding:40px; color:#888;">No loans found.<br><button class="btn-save" style="margin-top:15px;" onclick="openLoanRequestModal()">Apply for Loan</button></div>'; html += '</div>'; openDrilldownModal('📋 My Loans', html); }
+    
+    function showLoanDetails(loanId) { 
+        var loan = DB.loans.find(l => l.id === loanId); 
+        if (!loan) return; 
+        var emiAmount = loan.emiAmount || DB.conf.emi; 
+        var totalEmis = loan.totalEmis || Math.ceil(loan.amount / emiAmount); 
+        var paidEmis = loan.paidEmis || Math.floor((loan.paidAmount || 0) / emiAmount); 
+        var due = (loan.amount || 0) - (loan.paidAmount || 0); 
+        var isClosed = due <= 0 || loan.status === 'completed'; 
+        var procFeePaid = loan.procFeePaid || false; 
+        var nextEmiDue = (loan.nextEmiDue) || (paidEmis + 1);
+        var approvalDate = new Date(loan.approvalDateTime || loan.approvalDate);
+        var linkedAccount = DB.savingsAccounts.find(a => a.id === loan.linkedSavingsId);
+        
+        var html = '<div style="padding: 10px;"><div style="background: linear-gradient(135deg, #2c3e50 0%, #e67e22 100%); color:white; padding: 15px; margin-bottom: 15px; border-radius: 8px;"><div style="font-size: 18px; font-weight: bold;">📋 Loan #' + loan.id.slice(-6) + (isClosed ? ' ✅ CLOSED' : '') + '</div><div>💰 Total: ' + formatAmountWithCurrency(loan.amount) + ' | EMI: ' + formatAmountWithCurrency(emiAmount) + '</div><div>✅ EMIs Paid: ' + paidEmis + ' / ' + totalEmis + '</div><div>⚙️ Processing Fee: ' + (procFeePaid ? '✓ PAID' : '❌ NOT PAID') + '</div><div>🏦 Linked Savings: #' + (linkedAccount ? linkedAccount.id.slice(-6) : 'N/A') + '</div>' + (!isClosed ? '<div>⚠️ Remaining Due: <strong style="font-size: 20px;">' + formatAmountWithCurrency(due) + '</strong></div>' : '') + '</div>';
+        
+        if (!procFeePaid && loan.status === 'active' && !isClosed) { 
+            var existingProcReq = pendingPayments.some(p => p.loanId === loanId && p.type === 'proc' && p.status === 'pending'); 
+            html += '<div class="transaction-item" style="background: rgba(243,156,18,0.2); margin-bottom: 15px;"><div><strong>⚙️ Step 1: Loan Processing Fee (Required First)</strong><br><small>Must be paid before any EMI</small></div><div>' + formatAmountWithCurrency(DB.conf.proc) + (existingProcReq ? '<span class="btn-submitted" style="margin-left:10px;">⏳ SUBMITTED</span>' : '<button onclick="submitProcessingFeePayment(\'' + loanId + '\')" class="btn-pay" style="margin-left:10px;">Pay Fee</button>') + '</div></div>'; 
+        } else if (procFeePaid) { 
+            html += '<div class="transaction-item" style="background: rgba(46,204,113,0.1); margin-bottom: 15px;"><div><strong>✓ Step 1: Loan Processing Fee</strong><br><small>Paid</small></div><div><span class="status-paid">PAID ' + formatAmountWithCurrency(DB.conf.proc) + '</span></div></div>'; 
+        } else if (loan.status === 'pending') { 
+            html += '<div class="transaction-item" style="background: rgba(243,156,18,0.1); margin-bottom: 15px;"><div><strong>⏳ Loan Pending Approval</strong><br><small>Processing fee will be available after loan approval</small></div><div><span class="status-submitted">Waiting for Admin</span></div></div>'; 
+        }
+        
+        if (procFeePaid && !isClosed && loan.status === 'active') { 
+            html += '<div style="margin-top: 15px;"><strong>📅 EMI Repayment Schedule (Sequential)</strong></div><div style="background: #1a1f2e; padding: 15px; margin-bottom: 15px; border-radius: 8px;">';
+            var paidEmiNumbers = DB.loanTransactions.filter(t => t.loanId === loanId && t.type === 'emi').map(t => t.emiNumber);
+            var nextEmi = nextEmiDue;
+            
+            if (nextEmi <= totalEmis) {
+                var isSubmitted = pendingPayments.some(p => p.loanId === loanId && p.type === 'emi' && p.emiNumber === nextEmi && p.status === 'pending');
+                var dueDate = new Date(approvalDate);
+                dueDate.setMonth(approvalDate.getMonth() + nextEmi);
+                html += '<div class="transaction-item" style="margin-bottom: 8px; background: rgba(255,159,10,0.1);"><div><strong>EMI #' + nextEmi + ' (Next Due)</strong><br><small>Due: ' + dueDate.toLocaleDateString() + '</small></div><div>' + formatAmountWithCurrency(emiAmount);
+                if (isSubmitted) { html += ' <span class="status-submitted">⏳ SUBMITTED</span>'; }
+                else { html += ' <button onclick="submitSequentialEMIPayment(\'' + loanId + '\', ' + emiAmount + ', ' + nextEmi + ')" class="btn-pay" style="margin-left:8px;">Pay Now</button>'; }
+                html += '</div></div>';
+                
+                for (var f = nextEmi + 1; f <= Math.min(nextEmi + 5, totalEmis); f++) {
+                    var futureDueDate = new Date(approvalDate);
+                    futureDueDate.setMonth(approvalDate.getMonth() + f);
+                    html += '<div class="transaction-item disabled-payment" style="opacity:0.5;"><div><strong>EMI #' + f + '</strong><br><small>Due: ' + futureDueDate.toLocaleDateString() + '</small></div><div>' + formatAmountWithCurrency(emiAmount) + ' <span style="color:#888;">(Locked - Pay EMI #' + nextEmi + ' first)</span></div></div>';
+                }
+            } else {
+                html += '<div style="padding:10px; text-align:center; color:#2ecc71;">✅ All EMIs have been paid!</div>';
+            }
+            html += '</div>';
+        } else if (!procFeePaid && !isClosed && loan.status === 'active') { 
+            html += '<div style="background: rgba(243,156,18,0.1); padding: 15px; text-align: center; margin-bottom: 15px; border-radius: 8px;">⚠️ Please pay the Loan Processing Fee first to view EMI schedule.</div>'; 
+        }
+        
+        var allLoanTransactions = DB.loanTransactions.filter(t => t.loanId === loanId);
+        if (allLoanTransactions.length > 0) { 
+            html += '<div><strong>📋 Loan Payment History</strong></div>'; 
+            for (var i = 0; i < allLoanTransactions.length; i++) { 
+                var t = allLoanTransactions[i]; 
+                var transDateTime = new Date(t.dateTime || t.date); 
+                var label = t.type === 'proc' ? 'Processing Fee' : 'EMI #' + t.emiNumber; 
+                html += '<div class="transaction-item"><div><span>' + label + '</span><br><small>' + transDateTime.toLocaleDateString() + '</small></div><div>' + formatAmountWithCurrency(t.amount) + ' <button onclick="showReceipt(\'' + t.id + '\', \'loan\')" class="receipt-btn">📄 Receipt</button></div></div>'; 
+            } 
+        } 
+        html += '<button class="btn-cancel" style="margin-top:15px;" onclick="showLoansDrilldown()">← Back to Loans</button></div>'; 
+        openDrilldownModal('📅 Loan Details', html); 
+    }
+    
+    async function submitProcessingFeePayment(loanId) { 
+        var loan = DB.loans.find(l => l.id === loanId); 
+        if (!loan) return; 
+        if (loan.procFeePaid) { alert('Processing fee already paid!'); showLoanDetails(loanId); return; } 
+        if (pendingPayments.some(p => p.memberId === currentMember.id && p.status === 'pending')) { alert('You already have a pending payment.'); return; } 
+        pendingPayments.push({ id:'PAY'+Date.now(), memberId:currentMember.id, memberName:currentMember.name, linkedSavingsId: loan.linkedSavingsId, loanId: loanId, type: 'proc', amount: DB.conf.proc, description: 'Loan Processing Fee', requestDate:new Date().toISOString(), status:'pending' }); 
+        saveDataToLocal(); 
+        await saveAllDataToFirestore();
+        showNotification('✅ Processing Fee request submitted!', 'alert'); 
+        showLoanDetails(loanId); 
+    }
+    
+    async function submitSequentialEMIPayment(loanId, amount, emiNumber) { 
+        var loan = DB.loans.find(l => l.id === loanId); 
+        if (!loan) return; 
+        if (!loan.procFeePaid) { alert('Please pay the Loan Processing Fee first!'); showLoanDetails(loanId); return; } 
+        if (pendingPayments.some(p => p.memberId === currentMember.id && p.status === 'pending')) { alert('You already have a pending payment.'); return; } 
+        var alreadyPaid = DB.loanTransactions.some(t => t.loanId === loanId && t.type === 'emi' && t.emiNumber === emiNumber); 
+        if (alreadyPaid) { alert('EMI #' + emiNumber + ' is already paid!'); showLoanDetails(loanId); return; } 
+        pendingPayments.push({ id:'PAY'+Date.now(), memberId:currentMember.id, memberName:currentMember.name, linkedSavingsId: loan.linkedSavingsId, loanId: loanId, type: 'emi', amount: amount, emiNumber: emiNumber, description: 'EMI #' + emiNumber, requestDate:new Date().toISOString(), status:'pending' }); 
+        saveDataToLocal(); 
+        await saveAllDataToFirestore();
+        showNotification('✅ EMI #' + emiNumber + ' request submitted!', 'alert'); 
+        showLoanDetails(loanId); 
+    }
+    
+    // ======================== TEAM & MEMBERS MANAGEMENT ========================
+    function showTeamMembersDrilldown() { var teamMembers = DB.members.filter(m => m.type === 'member' && m.leaderId === currentMember.id); var html = ''; for (var i = 0; i < teamMembers.length; i++) { var m = teamMembers[i]; var accounts = DB.savingsAccounts.filter(a => a.memberId === m.id); var savings = accounts.reduce((s,a)=>s+(a.balance||0),0); html += '<div class="item-card" onclick="showMemberDetails(\'' + m.id + '\')"><div><strong>' + m.name + '</strong><br>📱 ' + m.mobile + '</div><div>💰 ' + formatAmountWithCurrency(savings) + '</div></div>'; } openDrilldownModal('👥 Team Members', html); }
+    function showMemberDetails(memberId) { var member = DB.members.find(m=>m.id===memberId); var accounts = DB.savingsAccounts.filter(a=>a.memberId===memberId); var loans = DB.loans.filter(l=>l.memberId===memberId); var html = '<div style="margin-bottom:15px;padding:10px;background:#1a1f2e; border-radius:8px;"><strong>'+member.name+'</strong><br>📱 '+member.mobile+'<br>📧 '+member.email+'</div><h4>💰 Savings Accounts</h4>'; for(var i=0;i<accounts.length;i++){ html += '<div class="item-card" onclick="showSavingsAccountStatementForAdmin(\''+accounts[i].id+'\')"><div>Savings #'+accounts[i].id.slice(-6)+'</div><div>Balance: '+formatAmountWithCurrency(accounts[i].balance)+'</div></div>'; } html += '<h4>📋 Loans</h4>'; for(var i=0;i<loans.length;i++){ var due=(loans[i].amount||0)-(loans[i].paidAmount||0); html += '<div class="item-card" onclick="showLoanDetailsForAdmin(\''+loans[i].id+'\')"><div>Loan #'+loans[i].id.slice(-6)+'</div><div>Due: '+formatAmountWithCurrency(due)+'</div></div>'; } html += '<button class="btn-cancel" onclick="showTeamMembersDrilldown()">← Back</button>'; openDrilldownModal('👤 Member Details', html); }
+    function showSavingsAccountStatementForAdmin(savingsId) { var account = DB.savingsAccounts.find(a=>a.id===savingsId); var transactions = DB.savingsTransactions.filter(t=>t.savingsId===savingsId).sort((a,b)=>new Date(b.dateTime||b.date)-new Date(a.dateTime||a.date)); var html = '<div><strong>Savings #'+account.id.slice(-6)+'</strong><br>Balance: '+formatAmountWithCurrency(account.balance)+'</div>'; for(var i=0;i<transactions.length;i++){ var t=transactions[i]; html += '<div class="transaction-item">'+new Date(t.dateTime||t.date).toLocaleDateString()+' - '+t.type+' - '+formatAmountWithCurrency(t.amount)+' <button onclick="showReceipt(\''+t.id+'\', \'savings\')" class="receipt-btn">Receipt</button></div>'; } html += '<button onclick="showMemberDetails(\''+account.memberId+'\')" class="btn-cancel">← Back</button>'; openDrilldownModal('📊 Savings Transactions', html); }
+    function showLoanDetailsForAdmin(loanId) { var loan = DB.loans.find(l=>l.id===loanId); var due=(loan.amount||0)-(loan.paidAmount||0); var html = '<div><strong>Loan #'+loan.id.slice(-6)+'</strong><br>Amount: '+formatAmountWithCurrency(loan.amount)+'<br>Due: '+formatAmountWithCurrency(due)+'</div>'; var loanTransactions = DB.loanTransactions.filter(t=>t.loanId===loanId); if(loanTransactions.length>0){ html += '<h4>Payment History</h4>'; for(var i=0;i<loanTransactions.length;i++){ var t=loanTransactions[i]; html += '<div class="transaction-item">'+new Date(t.dateTime||t.date).toLocaleDateString()+' - '+t.type+' - '+formatAmountWithCurrency(t.amount)+' <button onclick="showReceipt(\''+t.id+'\', \'loan\')" class="receipt-btn">Receipt</button></div>'; } } html += '<button onclick="showMemberDetails(\''+loan.memberId+'\')" class="btn-cancel">← Back</button>'; openDrilldownModal('📋 Loan Details', html); }
+    function openLeaderMemberRegistration() { var leaderSelect = document.getElementById('regLeaderSelect'); leaderSelect.innerHTML = '<option value="'+currentSession.userId+'">'+currentSession.userName+' (You)</option>'; leaderSelect.disabled = true; openModal('memberRegistrationModal'); }
+    async function registerNewMember() { var name = document.getElementById('regName').value.trim(); var email = document.getElementById('regEmail').value.trim(); var mobile = document.getElementById('regMobile').value.trim(); var idc = document.getElementById('regId').value.trim(); var leaderId = document.getElementById('regLeaderSelect').value; if (!name || !email || !mobile || !idc || !leaderId) { alert('All fields required'); return; } DB.members.push({ id: 'M' + Date.now(), type: 'member', name: name, email: email, mobile: mobile, idc: idc, leaderId: leaderId, regDate: new Date().toISOString(), regDateTime: new Date().toISOString(), pin: mobile.slice(-4), lastLogin: null }); saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Member registered! PIN: ' + mobile.slice(-4)); closeModal('memberRegistrationModal'); loadDashboard(); }
+    function sendTeamReminder() { var teamMembers = DB.members.filter(m => m.type === 'member' && m.leaderId === currentMember.id); showNotification('Reminder sent to ' + teamMembers.length + ' team members!', 'alert'); }
+    
+    // ======================== ADMIN DRILLDOWNS ========================
+    function showLeadersDrilldown() { var leaders = DB.members.filter(m => m.type === 'leader'); var html = ''; for (var i = 0; i < leaders.length; i++) { var l = leaders[i]; var teamMembers = DB.members.filter(m => m.type === 'member' && m.leaderId === l.id); html += '<div class="item-card" onclick="showMemberDetails(\'' + l.id + '\')"><div><strong>' + l.name + '</strong><br>📱 ' + l.mobile + '</div><div>👥 ' + teamMembers.length + ' members</div></div>'; } openDrilldownModal('⭐ Leaders', html); }
+    function showAllMembersDrilldown() { var members = DB.members.filter(m => m.type === 'member'); var html = ''; for (var i = 0; i < members.length; i++) { var m = members[i]; var leader = DB.members.find(l => l.id === m.leaderId); html += '<div class="item-card" onclick="showMemberDetails(\'' + m.id + '\')"><div><strong>' + m.name + '</strong><br>📱 ' + m.mobile + '</div><div>Leader: ' + (leader ? leader.name : 'N/A') + '</div></div>'; } openDrilldownModal('👥 Members', html); }
+    function showAllAccountsDrilldown() { var accounts = DB.savingsAccounts.slice(); var html = ''; for (var i = 0; i < accounts.length; i++) { var a = accounts[i]; var member = DB.members.find(m => m.id === a.memberId); html += '<div class="item-card" onclick="showSavingsAccountStatementForAdmin(\'' + a.id + '\')"><div>Savings #' + a.id.slice(-6) + '<br>Member: ' + (member ? member.name : a.memberName) + '</div><div>Balance: ' + formatAmountWithCurrency(a.balance) + '</div></div>'; } openDrilldownModal('💰 All Savings Accounts', html); }
+    function showAllLoansDrilldown() { var loans = DB.loans.filter(l => l.status === 'active'); var html = ''; for (var i = 0; i < loans.length; i++) { var l = loans[i]; var member = DB.members.find(m => m.id === l.memberId); var due = (l.amount || 0) - (l.paidAmount || 0); html += '<div class="item-card" onclick="showLoanDetailsForAdmin(\'' + l.id + '\')"><div>Loan #' + l.id.slice(-6) + '<br>Member: ' + (member ? member.name : l.memberName) + '</div><div>Due: ' + formatAmountWithCurrency(due) + '</div></div>'; } openDrilldownModal('📋 Active Loans', html); }
+    
+    // ======================== TRANSFER REQUESTS ========================
+    function openTransferRequestModal() { var memberSelect = document.getElementById('transferMemberSelect'); var leaderSelect = document.getElementById('transferLeaderSelect'); memberSelect.innerHTML = '<option value="">-- Select Member --</option>'; var teamMembers = DB.members.filter(m => m.type === 'member' && m.leaderId === currentMember.id); for (var i = 0; i < teamMembers.length; i++) { memberSelect.innerHTML += '<option value="' + teamMembers[i].id + '">' + teamMembers[i].name + '</option>'; } leaderSelect.innerHTML = '<option value="">-- Select New Leader --</option>'; var leaders = DB.members.filter(m => m.type === 'leader' && m.id !== currentMember.id); for (var i = 0; i < leaders.length; i++) { leaderSelect.innerHTML += '<option value="' + leaders[i].id + '">' + leaders[i].name + '</option>'; } openModal('transferRequestModal'); }
+    async function submitTransferRequest() { var memberId = document.getElementById('transferMemberSelect').value; var newLeaderId = document.getElementById('transferLeaderSelect').value; var reason = document.getElementById('transferReason').value; if (!memberId || !newLeaderId) { alert('Please select member and new leader'); return; } DB.transferRequests.push({ id: 'TR' + Date.now(), memberId: memberId, memberName: DB.members.find(m => m.id === memberId).name, currentLeaderId: currentSession.userId, newLeaderId: newLeaderId, reason: reason, requestDate: new Date().toISOString(), status: 'pending' }); saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Transfer request submitted!', 'alert'); closeModal('transferRequestModal'); }
+    function openTransferApproval() { var pendingTransfers = DB.transferRequests.filter(t => t.status === 'pending'); if (pendingTransfers.length === 0) { alert('No pending transfer requests'); return; } var html = ''; for (var i = 0; i < pendingTransfers.length; i++) { var t = pendingTransfers[i]; var currentLeader = DB.members.find(m => m.id === t.currentLeaderId); var newLeader = DB.members.find(m => m.id === t.newLeaderId); html += '<div class="item-card"><div><strong>' + t.memberName + '</strong><br>From: ' + (currentLeader ? currentLeader.name : 'N/A') + '<br>To: ' + (newLeader ? newLeader.name : 'N/A') + '</div><div><button class="btn-sm btn-approve" onclick="approveTransfer(\'' + t.id + '\')">Approve</button><button class="btn-sm btn-reject" onclick="rejectTransfer(\'' + t.id + '\')">Reject</button></div></div>'; } openDrilldownModal('🔄 Transfer Requests', html); }
+    async function approveTransfer(transferId) { var transfer = DB.transferRequests.find(t => t.id === transferId); if (transfer) { var member = DB.members.find(m => m.id === transfer.memberId); if (member) member.leaderId = transfer.newLeaderId; transfer.status = 'approved'; saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Transfer approved!', 'alert'); openTransferApproval(); loadDashboard(); } }
+    async function rejectTransfer(transferId) { var transfer = DB.transferRequests.find(t => t.id === transferId); if (transfer) { transfer.status = 'rejected'; saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Transfer rejected'); openTransferApproval(); } }
+    
+    // ======================== SETTINGS ========================
+    function openSettings() { document.getElementById('setCompany').value = DB.conf.name; document.getElementById('setAddress').value = DB.conf.addr; document.getElementById('setAdminPass').value = DB.conf.pass; document.getElementById('setCurrency').value = DB.conf.cur; document.getElementById('setRegFee').value = DB.conf.reg; document.getElementById('setDeposit').value = DB.conf.dep; document.getElementById('setProcFee').value = DB.conf.proc; document.getElementById('setEmi').value = DB.conf.emi; document.getElementById('setDonationAmount').value = DB.conf.don; document.getElementById('setDonationMonths').value = DB.conf.don_mo; document.getElementById('setMinWithdrawMonths').value = DB.conf.mw; document.getElementById('setMinLoanMonths').value = DB.conf.ml; document.getElementById('setMaxLoan').value = DB.conf.max; document.getElementById('setTier1').value = DB.conf.tier1; document.getElementById('setTier2').value = DB.conf.tier2; document.getElementById('setTier3').value = DB.conf.tier3; document.getElementById('setTier4').value = DB.conf.tier4; document.getElementById('setTier5').value = DB.conf.tier5; document.getElementById('setMinWithdrawAmount').value = (DB.conf.dep * DB.conf.mw).toFixed(3); document.getElementById('setMinDepositRequired').value = (DB.conf.dep * DB.conf.ml).toFixed(3); openModal('settingsModal'); }
+    async function saveSettings() { DB.conf.name = document.getElementById('setCompany').value; DB.conf.addr = document.getElementById('setAddress').value; DB.conf.pass = document.getElementById('setAdminPass').value; DB.conf.cur = document.getElementById('setCurrency').value; DB.conf.reg = parseFloat(document.getElementById('setRegFee').value) || 0; DB.conf.dep = parseFloat(document.getElementById('setDeposit').value) || 0; DB.conf.proc = parseFloat(document.getElementById('setProcFee').value) || 0; DB.conf.emi = parseFloat(document.getElementById('setEmi').value) || 0; DB.conf.don = parseFloat(document.getElementById('setDonationAmount').value) || 0; DB.conf.don_mo = parseInt(document.getElementById('setDonationMonths').value) || 11; DB.conf.mw = parseInt(document.getElementById('setMinWithdrawMonths').value) || 0; DB.conf.ml = parseInt(document.getElementById('setMinLoanMonths').value) || 0; DB.conf.max = parseFloat(document.getElementById('setMaxLoan').value) || 0; DB.conf.tier1 = parseInt(document.getElementById('setTier1').value) || 0; DB.conf.tier2 = parseInt(document.getElementById('setTier2').value) || 0; DB.conf.tier3 = parseInt(document.getElementById('setTier3').value) || 0; DB.conf.tier4 = parseInt(document.getElementById('setTier4').value) || 0; DB.conf.tier5 = parseInt(document.getElementById('setTier5').value) || 0; saveDataToLocal(); await saveAllDataToFirestore(); document.getElementById('d-comp').innerHTML = DB.conf.name; showNotification('Settings saved'); closeModal('settingsModal'); loadDashboard(); }
+    function updateCurrencyFormat() { }
+    
+    // ======================== ACCOUNT MANAGEMENT ========================
+    function openAccountModal() { var select = document.getElementById('openAccountMember'); select.innerHTML = '<option value="">-- Select Member --</option>'; DB.members.forEach(m => { select.innerHTML += '<option value="' + m.id + '">' + m.name + '</option>'; }); openModal('openAccountModal'); }
+    async function openSavingsAccount() { var memberId = document.getElementById('openAccountMember').value; if (!memberId) { alert('Select member'); return; } var member = DB.members.find(m => m.id === memberId); DB.savingsAccounts.push({ id: 'SAV' + Date.now(), memberId: member.id, memberName: member.name, openDate: new Date().toISOString().split('T')[0], openDateTime: new Date().toISOString(), balance: 0, status: 'active' }); saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Savings account opened for ' + member.name); closeModal('openAccountModal'); loadDashboard(); }
+    
+    // ======================== LEADER REGISTRATION ========================
+    function openLeaderRegistrationModal() { openModal('leaderRegistrationModal'); }
+    async function registerNewLeader() { var name = document.getElementById('leaderRegName').value.trim(); var email = document.getElementById('leaderRegEmail').value.trim(); var mobile = document.getElementById('leaderRegMobile').value.trim(); var idc = document.getElementById('leaderRegId').value.trim(); if (!name || !email || !mobile || !idc) { alert('All fields required'); return; } DB.members.push({ id: 'L' + Date.now(), type: 'leader', name: name, email: email, mobile: mobile, idc: idc, regDate: new Date().toISOString().split('T')[0], regDateTime: new Date().toISOString(), pin: mobile.slice(-4), lastLogin: null }); saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Leader registered! PIN: ' + mobile.slice(-4)); closeModal('leaderRegistrationModal'); loadDashboard(); }
+    
+    // ======================== BACKUP & RESTORE ========================
+    function openBackupRestoreModal() { var lastBackup = localStorage.getItem('LAST_BACKUP_TIME'); document.getElementById('lastBackupTime').value = lastBackup ? new Date(lastBackup).toLocaleString() : 'Never'; var interval = localStorage.getItem('BACKUP_INTERVAL'); document.getElementById('backupInterval').value = interval || '24'; openModal('backupRestoreModal'); }
+    function manualBackup() { var backup = { db: DB, pendingPayments: pendingPayments, timestamp: new Date().toISOString() }; var blob = new Blob([JSON.stringify(backup)], { type: 'application/json' }); var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'shg_backup_' + new Date().toISOString().slice(0,19).replace(/:/g, '-') + '.json'; a.click(); localStorage.setItem('LAST_BACKUP_TIME', new Date().toISOString()); showNotification('Backup created!'); closeModal('backupRestoreModal'); }
+    function saveBackupSettings() { var interval = parseInt(document.getElementById('backupInterval').value); localStorage.setItem('BACKUP_INTERVAL', interval); if (backupIntervalId) clearInterval(backupIntervalId); backupIntervalId = setInterval(function() { localStorage.setItem('AUTO_BACKUP', JSON.stringify({db:DB,pendingPayments,timestamp:new Date().toISOString()})); }, interval * 60 * 60 * 1000); showNotification('Backup schedule saved!'); closeModal('backupRestoreModal'); }
+    function showRestoreFileInput() { document.getElementById('restoreFile').click(); }
+    function restoreFromFile() { var file = document.getElementById('restoreFile').files[0]; if (!file) return; var reader = new FileReader(); reader.onload = function(e) { try { var data = JSON.parse(e.target.result); if (data.db) DB = data.db; if (data.pendingPayments) pendingPayments = data.pendingPayments; saveDataToLocal(); localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments)); showNotification('Restore successful!', 'alert'); if (isFirebaseConnected) setTimeout(function() { saveAllDataToFirestore(); }, 1000); setTimeout(function() { location.reload(); }, 1500); } catch(err) { alert('Invalid backup file'); } }; reader.readAsText(file); }
+    
+    // ======================== LEDGER & NOTIFICATIONS & EXPENSE ========================
+    function openLedgerModal() { var html = '<table style="width:100%; border-collapse: collapse;"><tr style="background:#2c3e50; color:white;"><th>Date</th><th>Type</th><th>Account</th><th>Amount</th></tr>'; var allTx = []; DB.savingsTransactions.forEach(t => { allTx.push({ date: t.dateTime || t.date, type: 'Savings: ' + t.type, account: t.savingsId, amount: t.amount }); }); DB.loanTransactions.forEach(t => { allTx.push({ date: t.dateTime || t.date, type: 'Loan: ' + t.type, account: t.loanId, amount: t.amount }); }); allTx.sort((a,b)=>new Date(b.date)-new Date(a.date)); for(var i=0;i<Math.min(allTx.length,50);i++){ var tx=allTx[i]; html += '<tr><td style="color:#fff;">'+new Date(tx.date).toLocaleDateString()+'</td><td style="color:#fff;">'+tx.type+'</td><td style="color:#fff;">'+tx.account.slice(-6)+'</td><td style="color:#fff;">'+formatAmountWithCurrency(tx.amount)+'</td></tr>'; } html += '</table>'; document.getElementById('ledgerContent').innerHTML = html; openModal('ledgerModal'); }
+    function openNotificationModal() { openModal('notificationModal'); }
+    function loadNotificationTemplate() { var template = document.getElementById('notifTemplate').value; var templates = { 'payment_reminder': { subject: '💰 Payment Reminder', message: 'Dear member, your monthly deposit is due.' }, 'meeting_reminder': { subject: '📅 Meeting Reminder', message: 'Reminder: Group meeting tomorrow at 6 PM.' }, 'loan_approval': { subject: '✅ Loan Approved', message: 'Congratulations! Your loan has been approved.' }, 'welcome': { subject: '👋 Welcome!', message: 'Welcome to AL AMIN GROUP!' } }; if (templates[template]) { document.getElementById('notifSubject').value = templates[template].subject; document.getElementById('notifMessage').value = templates[template].message; } }
+    function sendNotificationMsg() { var to = document.getElementById('notifTo').value; var subject = document.getElementById('notifSubject').value; var message = document.getElementById('notifMessage').value; if (!subject || !message) { alert('Fill all fields'); return; } showNotification('Notification sent to ' + to, 'alert'); closeModal('notificationModal'); }
+    function recordExpense() { var desc = document.getElementById('expenseDesc').value; var amount = parseFloat(document.getElementById('expenseAmount').value); if (!desc || amount <= 0) { alert('Invalid expense'); return; } showNotification('Expense recorded: ' + formatAmountWithCurrency(amount)); closeModal('expenseModal'); }
+    
+    // ======================== IT EDIT/DELETE FUNCTIONS ========================
+    function showAllMembersWithEdit() { var members = DB.members.filter(m => m.type === 'member'); var html = ''; for (var i = 0; i < members.length; i++) { var m = members[i]; var leader = DB.members.find(l => l.id === m.leaderId); html += '<div class="item-card"><div><strong>' + m.name + '</strong><br>📱 ' + m.mobile + '<br>Leader: ' + (leader ? leader.name : 'N/A') + '</div><div><button class="btn-sm btn-warning" onclick="editMember(\'' + m.id + '\')">Edit</button> <button class="btn-sm btn-reject" onclick="deleteMemberById(\'' + m.id + '\')">Delete</button></div></div>'; } openDrilldownModal('👥 Members (Edit/Delete)', html); }
+    function editMember(memberId) { var member = DB.members.find(m => m.id === memberId); window.currentEditMemberId = memberId; document.getElementById('editMemberName').value = member.name; document.getElementById('editMemberEmail').value = member.email || ''; document.getElementById('editMemberMobile').value = member.mobile || ''; document.getElementById('editMemberIdc').value = member.idc || ''; var leaderSelect = document.getElementById('editMemberLeader'); leaderSelect.innerHTML = '<option value="">-- Select Leader --</option>'; DB.members.filter(l => l.type === 'leader').forEach(l => { leaderSelect.innerHTML += '<option value="' + l.id + '"' + (l.id === member.leaderId ? ' selected' : '') + '>' + l.name + '</option>'; }); openModal('editMemberModal'); }
+    async function saveMemberEdit() { var member = DB.members.find(m => m.id === window.currentEditMemberId); if (member) { member.name = document.getElementById('editMemberName').value; member.email = document.getElementById('editMemberEmail').value; member.mobile = document.getElementById('editMemberMobile').value; member.idc = document.getElementById('editMemberIdc').value; member.leaderId = document.getElementById('editMemberLeader').value; saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Member updated'); closeModal('editMemberModal'); showAllMembersWithEdit(); loadDashboard(); } }
+    function deleteMember() { deleteMemberById(window.currentEditMemberId); }
+    async function deleteMemberById(memberId) { if (confirm('Delete this member?')) { DB.savingsAccounts = DB.savingsAccounts.filter(a => a.memberId !== memberId); DB.loans = DB.loans.filter(l => l.memberId !== memberId); DB.requests = DB.requests.filter(r => r.memberId !== memberId); DB.members = DB.members.filter(m => m.id !== memberId); saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Member deleted'); showAllMembersWithEdit(); loadDashboard(); } }
+    function showAllAccountsWithEdit() { var accounts = DB.savingsAccounts.slice(); var html = ''; for (var i = 0; i < accounts.length; i++) { var a = accounts[i]; var member = DB.members.find(m => m.id === a.memberId); html += '<div class="item-card"><div><strong>Savings #' + a.id.slice(-6) + '</strong><br>Member: ' + (member ? member.name : a.memberName) + '<br>Balance: ' + formatAmountWithCurrency(a.balance) + '</div><div><button class="btn-sm btn-warning" onclick="editAccount(\'' + a.id + '\')">Edit</button> <button class="btn-sm btn-reject" onclick="deleteAccountById(\'' + a.id + '\')">Delete</button></div></div>'; } openDrilldownModal('💰 Savings Accounts (Edit/Delete)', html); }
+    function editAccount(accountId) { var account = DB.savingsAccounts.find(a => a.id === accountId); window.currentEditAccountId = accountId; document.getElementById('editAccountDate').value = (account.openDateTime || account.openDate).slice(0, 10); document.getElementById('editAccountBalance').value = account.balance; document.getElementById('editAccountStatus').value = account.status; openModal('editAccountModal'); }
+    async function saveAccountEdit() { var account = DB.savingsAccounts.find(a => a.id === window.currentEditAccountId); if (account) { account.balance = parseFloat(document.getElementById('editAccountBalance').value); account.status = document.getElementById('editAccountStatus').value; saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Account updated'); closeModal('editAccountModal'); showAllAccountsWithEdit(); loadDashboard(); } }
+    function deleteAccount() { deleteAccountById(window.currentEditAccountId); }
+    async function deleteAccountById(accountId) { if (confirm('Delete this account?')) { DB.savingsTransactions = DB.savingsTransactions.filter(t => t.savingsId !== accountId); DB.savingsAccounts = DB.savingsAccounts.filter(a => a.id !== accountId); saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Account deleted'); showAllAccountsWithEdit(); loadDashboard(); } }
+    function showAllLoansWithEdit() { var loans = DB.loans.slice(); var html = ''; for (var i = 0; i < loans.length; i++) { var l = loans[i]; var member = DB.members.find(m => m.id === l.memberId); var due = (l.amount || 0) - (l.paidAmount || 0); html += '<div class="item-card"><div><strong>Loan #' + l.id.slice(-6) + '</strong><br>Member: ' + (member ? member.name : l.memberName) + '<br>Amount: ' + formatAmountWithCurrency(l.amount) + ' | Due: ' + formatAmountWithCurrency(due) + '<br>Proc Fee: ' + (l.procFeePaid ? 'Paid' : 'Not Paid') + '</div><div><button class="btn-sm btn-warning" onclick="editLoan(\'' + l.id + '\')">Edit</button> <button class="btn-sm btn-reject" onclick="deleteLoanById(\'' + l.id + '\')">Delete</button></div></div>'; } openDrilldownModal('📋 Loans (Edit/Delete)', html); }
+    function editLoan(loanId) { var loan = DB.loans.find(l => l.id === loanId); window.currentEditLoanId = loanId; document.getElementById('editLoanAmount').value = loan.amount; document.getElementById('editLoanPaid').value = loan.paidAmount; document.getElementById('editLoanStatus').value = loan.status; openModal('editLoanModal'); }
+    async function saveLoanEdit() { var loan = DB.loans.find(l => l.id === window.currentEditLoanId); if (loan) { loan.amount = parseFloat(document.getElementById('editLoanAmount').value); loan.paidAmount = parseFloat(document.getElementById('editLoanPaid').value); loan.status = document.getElementById('editLoanStatus').value; saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Loan updated'); closeModal('editLoanModal'); showAllLoansWithEdit(); loadDashboard(); } }
+    function deleteLoan() { deleteLoanById(window.currentEditLoanId); }
+    async function deleteLoanById(loanId) { if (confirm('Delete this loan?')) { DB.loanTransactions = DB.loanTransactions.filter(t => t.loanId !== loanId); DB.loans = DB.loans.filter(l => l.id !== loanId); saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Loan deleted'); showAllLoansWithEdit(); loadDashboard(); } }
+    function showAllTransactionsWithEdit() { var allTx = []; DB.savingsTransactions.forEach(t => { allTx.push({ id: t.id, type: 'Savings: ' + t.type, account: t.savingsId, amount: t.amount, date: t.dateTime || t.date, memberId: t.memberId, category: 'savings' }); }); DB.loanTransactions.forEach(t => { allTx.push({ id: t.id, type: 'Loan: ' + t.type, account: t.loanId, amount: t.amount, date: t.dateTime || t.date, memberId: t.memberId, category: 'loan' }); }); allTx.sort((a,b)=>new Date(b.date)-new Date(a.date)); var html = ''; for (var i = 0; i < Math.min(allTx.length, 50); i++) { var t = allTx[i]; var member = DB.members.find(m => m.id === t.memberId); html += '<div class="item-card"><div><strong>' + (member ? member.name : 'System') + '</strong><br>' + t.type + '<br><small>' + new Date(t.date).toLocaleString() + '</small><br>' + formatAmountWithCurrency(t.amount) + '</div><div><button class="btn-sm btn-warning" onclick="editTransaction(\'' + t.id + '\', \'' + t.category + '\')">Edit</button> <button class="btn-sm btn-reject" onclick="deleteTransactionById(\'' + t.id + '\', \'' + t.category + '\')">Delete</button> <button class="receipt-btn" onclick="showReceipt(\'' + t.id + '\', \'' + t.category + '\')">Receipt</button></div></div>'; } openDrilldownModal('📊 All Transactions (Edit/Delete)', html); }
+    function editTransaction(transactionId, category) { window.currentEditTransactionId = transactionId; window.currentEditTransactionCategory = category; var transaction = (category === 'savings') ? DB.savingsTransactions.find(t => t.id === transactionId) : DB.loanTransactions.find(t => t.id === transactionId); if (transaction) { document.getElementById('editTransType').value = transaction.type; document.getElementById('editTransAmount').value = transaction.amount; document.getElementById('editTransRef').value = transaction.reference || ''; var date = new Date(transaction.dateTime || transaction.date); document.getElementById('editTransDate').value = date.toISOString().slice(0, 16); openModal('editTransactionModal'); } }
+    async function saveTransactionEdit() { var transaction = (window.currentEditTransactionCategory === 'savings') ? DB.savingsTransactions.find(t => t.id === window.currentEditTransactionId) : DB.loanTransactions.find(t => t.id === window.currentEditTransactionId); if (transaction) { transaction.amount = parseFloat(document.getElementById('editTransAmount').value); transaction.reference = document.getElementById('editTransRef').value; var newDate = document.getElementById('editTransDate').value; if (newDate) { transaction.date = new Date(newDate).toISOString(); transaction.dateTime = new Date(newDate).toISOString(); } saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Transaction updated'); closeModal('editTransactionModal'); showAllTransactionsWithEdit(); loadDashboard(); } }
+    function deleteTransaction() { deleteTransactionById(window.currentEditTransactionId, window.currentEditTransactionCategory); }
+    async function deleteTransactionById(transactionId, category) { if (confirm('Delete this transaction?')) { if (category === 'savings') { DB.savingsTransactions = DB.savingsTransactions.filter(t => t.id !== transactionId); } else { DB.loanTransactions = DB.loanTransactions.filter(t => t.id !== transactionId); } saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Transaction deleted'); showAllTransactionsWithEdit(); loadDashboard(); } }
+    function showLeaderManagement() { var leaders = DB.members.filter(m => m.type === 'leader'); var html = '<div style="padding:10px;"><h3 style="color:white; margin-bottom:15px;">⭐ Leader Management</h3>'; for (var i = 0; i < leaders.length; i++) { var l = leaders[i]; var teamMembers = DB.members.filter(m => m.type === 'member' && m.leaderId === l.id); html += '<div class="item-card"><div><strong>' + l.name + '</strong><br>📱 ' + l.mobile + '<br>📧 ' + l.email + '<br>👥 Team: ' + teamMembers.length + ' members</div><div><button class="btn-sm btn-warning" onclick="editLeader(\'' + l.id + '\')">Edit</button> <button class="btn-sm btn-reject" onclick="deleteLeaderById(\'' + l.id + '\')">Delete</button></div></div>'; } html += '<button class="btn-cancel" style="margin-top:15px;" onclick="loadITDashboard()">← Back</button></div>'; openDrilldownModal('⭐ Leader Management', html); }
+    function editLeader(leaderId) { var leader = DB.members.find(m => m.id === leaderId); window.currentEditLeaderId = leaderId; document.getElementById('editLeaderName').value = leader.name; document.getElementById('editLeaderEmail').value = leader.email || ''; document.getElementById('editLeaderMobile').value = leader.mobile || ''; document.getElementById('editLeaderIdc').value = leader.idc || ''; openModal('editLeaderModal'); }
+    async function saveLeaderEdit() { var leader = DB.members.find(m => m.id === window.currentEditLeaderId); if (leader) { leader.name = document.getElementById('editLeaderName').value; leader.email = document.getElementById('editLeaderEmail').value; leader.mobile = document.getElementById('editLeaderMobile').value; leader.idc = document.getElementById('editLeaderIdc').value; saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Leader updated'); closeModal('editLeaderModal'); showLeaderManagement(); loadDashboard(); } }
+    function deleteLeader() { deleteLeaderById(window.currentEditLeaderId); }
+    async function deleteLeaderById(leaderId) { if (confirm('Delete this leader? All team members will become unassigned!')) { var teamMembers = DB.members.filter(m => m.type === 'member' && m.leaderId === leaderId); for (var i = 0; i < teamMembers.length; i++) { teamMembers[i].leaderId = null; } DB.members = DB.members.filter(m => m.id !== leaderId); saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Leader deleted'); showLeaderManagement(); loadDashboard(); } }
+    
+    // ======================== PROFILE & PASSWORD ========================
+    function showProfileModal() { var member = DB.members.find(m => m.id === currentSession.userId); if (!member) { alert('Profile not found'); return; } var accounts = DB.savingsAccounts.filter(a => a.memberId === member.id); var savings = accounts.reduce((s,a) => s + (a.balance||0), 0); var html = '<div><strong>Name:</strong> ' + member.name + '</div><div><strong>Mobile:</strong> ' + member.mobile + '</div><div><strong>Email:</strong> ' + (member.email || 'N/A') + '</div><div><strong>Total Savings:</strong> ' + formatAmountWithCurrency(savings) + '</div><button class="btn-gradient" style="margin-top:15px;" onclick="closeModal(\'profileModal\');openModal(\'changePasswordModal\');">🔑 Change Password</button>'; document.getElementById('profileContent').innerHTML = html; openModal('profileModal'); }
+    async function updatePassword() { var current = document.getElementById('currentPassword').value; var newPass = document.getElementById('newPassword').value; var confirm = document.getElementById('confirmPassword').value; if (newPass !== confirm) { alert('Passwords do not match'); return; } if (current === MASTER_PASSWORD || current === '123') { var member = DB.members.find(m => m.id === currentSession.userId); if (member) { member.pin = newPass; saveDataToLocal(); await saveAllDataToFirestore(); showNotification('Password updated!'); closeModal('changePasswordModal'); } } else { alert('Current password incorrect'); } }
+    
+    // ======================== RECEIPT FUNCTIONS ========================
+    function showReceipt(transactionId, category) { var t = (category === 'savings') ? DB.savingsTransactions.find(tx => tx.id === transactionId) : DB.loanTransactions.find(tx => tx.id === transactionId); if (!t) { alert('Transaction not found'); return; } var account = (category === 'savings') ? DB.savingsAccounts.find(a => a.id === t.savingsId) : null; var loan = (category === 'loan') ? DB.loans.find(l => l.id === t.loanId) : null; var member = DB.members.find(m => m.id === t.memberId); var transDateTime = new Date(t.dateTime || t.date); var receiptHtml = '<div class="receipt-content"><div class="receipt-header"><div style="font-size:24px; font-weight:bold;">🏦 ' + DB.conf.name + '</div><div>' + DB.conf.addr + '</div><div style="font-size:18px;">TRANSACTION RECEIPT</div></div><div class="receipt-details"><div><strong>Receipt No:</strong> ' + t.id + '</div><div><strong>Date:</strong> ' + transDateTime.toLocaleString() + '</div><div><strong>Type:</strong> ' + t.type.toUpperCase() + (t.emiNumber ? ' #' + t.emiNumber : '') + '</div><div><strong>Amount:</strong> ' + formatAmountWithCurrency(t.amount) + '</div>' + (t.reference ? '<div><strong>Reference:</strong> ' + t.reference + '</div>' : '') + '<div><strong>Member:</strong> ' + (member ? member.name : 'N/A') + '</div>' + (account ? '<div><strong>Savings Account:</strong> #' + account.id.slice(-6) + '</div><div><strong>Balance:</strong> ' + formatAmountWithCurrency(account.balance) + '</div>' : '') + (loan ? '<div><strong>Loan Account:</strong> #' + loan.id.slice(-6) + '</div><div><strong>Loan Due:</strong> ' + formatAmountWithCurrency((loan.amount||0)-(loan.paidAmount||0)) + '</div>' : '') + '</div>' + (t.type === 'reg' ? '<div style="background: #f39c12; color: white; padding: 8px; border-radius: 8px; text-align: center; margin: 10px 0;">ℹ️ Registration fee goes to company account (non-refundable)</div>' : '') + (t.type === 'proc' ? '<div style="background: #f39c12; color: white; padding: 8px; border-radius: 8px; text-align: center; margin: 10px 0;">ℹ️ Loan processing fee paid - You can now make EMI payments</div>' : '') + '<div class="receipt-footer">Thank you for saving with us!<br><small>Digitally Verified</small></div><div style="margin-top:15px; display:flex; gap:10px; justify-content:center;"><button onclick="shareReceiptWhatsApp(\'' + t.id + '\', \'' + category + '\')" style="background:#25D366; color:white; border:none; padding:8px 12px; border-radius:5px;">📱 WhatsApp</button><button onclick="downloadReceiptPDF(\'' + t.id + '\', \'' + category + '\')" style="background:#ff9800; color:white; border:none; padding:8px 12px; border-radius:5px;">📄 PDF</button><button onclick="copyReceiptText(\'' + t.id + '\', \'' + category + '\')" style="background:#607d8b; color:white; border:none; padding:8px 12px; border-radius:5px;">📋 Copy</button><button onclick="closeReceipt()" style="background:#e74c3c; color:white; border:none; padding:8px 12px; border-radius:5px;">✖ Close</button></div></div>'; var modal = document.createElement('div'); modal.className = 'receipt-modal'; modal.innerHTML = receiptHtml; document.body.appendChild(modal); }
+    function shareReceiptWhatsApp(transactionId, category) { var t = (category === 'savings') ? DB.savingsTransactions.find(tx => tx.id === transactionId) : DB.loanTransactions.find(tx => tx.id === transactionId); if (!t) return; var d = new Date(t.dateTime || t.date); var text = '🏦 ' + DB.conf.name + ' - RECEIPT\nReceipt: ' + t.id + '\nDate: ' + d.toLocaleDateString() + '\nAmount: ' + formatAmountWithCurrency(t.amount); window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank'); }
+    function downloadReceiptPDF(transactionId, category) { var receiptElement = document.querySelector('.receipt-modal .receipt-content'); if (!receiptElement) return; html2canvas(receiptElement, { scale: 2 }).then(function(canvas) { var imgData = canvas.toDataURL('image/png'); var pdf = new jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a5' }); var imgWidth = 148; var imgHeight = (canvas.height * imgWidth) / canvas.width; pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight); pdf.save('receipt_' + transactionId + '.pdf'); showNotification('PDF saved!'); }); }
+    function copyReceiptText(transactionId, category) { var t = (category === 'savings') ? DB.savingsTransactions.find(tx => tx.id === transactionId) : DB.loanTransactions.find(tx => tx.id === transactionId); if (!t) return; var text = '🏦 ' + DB.conf.name + '\nRECEIPT\nReceipt: ' + t.id + '\nAmount: ' + formatAmountWithCurrency(t.amount); navigator.clipboard.writeText(text).then(() => showNotification('Copied!')); }
+    function closeReceipt() { var modal = document.querySelector('.receipt-modal'); if (modal) modal.remove(); }
+    
+    // ======================== PAYMENT LIST ========================
+    function showPaymentList() { var accounts = DB.savingsAccounts.filter(a => a.memberId === currentMember.id && a.status === 'active'); if(accounts.length===0){ alert('No active savings accounts found.'); return; } var html = '<div style="padding:10px;">'; for(var i=0;i<accounts.length;i++){ var account = accounts[i]; var regPaid = DB.savingsTransactions.some(t => t.savingsId === account.id && t.type === 'reg'); html += '<div style="background:#1a1f2e; border:1px solid rgba(46,204,113,0.3); margin-bottom:20px; padding:15px; border-radius:8px;"><div style="font-weight:bold; color:#2ecc71;">🏦 Savings Account #'+account.id.slice(-6)+'</div><div>Balance: '+formatAmountWithCurrency(account.balance)+'</div>'; if(!regPaid){ html += '<button onclick="submitRegFeePayment(\''+account.id+'\')" class="btn-save" style="margin-top:10px; background:#ff9f0a;">Pay Registration Fee '+formatAmountWithCurrency(DB.conf.reg)+'</button>'; } else { var accountOpenDate = new Date(account.openDateTime || account.openDate); var paidDeposits = DB.savingsTransactions.filter(t=>t.savingsId===account.id && t.type==='dep').map(function(t) { return { monthLabel: t.monthLabel }; }); var nextDue = getNextDueDepositMonth(accountOpenDate, paidDeposits); if(nextDue){ var isSubmitted = pendingPayments.some(p => p.savingsId === account.id && p.type === 'dep' && p.dueMonth === nextDue.monthLabel && p.status === 'pending'); html += '<div style="margin-top:15px;"><strong>📅 Next Deposit Due: ' + nextDue.monthLabel + '</strong></div>'; html += '<button onclick="submitSequentialDepositPayment(\''+account.id+'\',\''+nextDue.monthLabel+'\')" class="btn-save" style="margin-top:10px;" ' + (isSubmitted ? 'disabled' : '') + '>' + (isSubmitted ? '⏳ SUBMITTED' : 'Pay ' + formatAmountWithCurrency(DB.conf.dep)) + '</button>'; } else { html += '<div style="margin-top:15px; color:#2ecc71;">✅ All deposits up to date!</div>'; } } html += '</div>'; } html += '</div>'; openDrilldownModal('💰 Payment List', html); }
+    
+    // ======================== NOTIFICATION SYSTEM ========================
+    function addNotification(userId, title, message, actionData) { var notif = { id: 'NOTIF'+Date.now(), userId: userId, title: title, message: message, actionData: actionData, read: false, timestamp: new Date().toISOString() }; DB.notifications = DB.notifications || []; DB.notifications.push(notif); saveDataToLocal(); saveAllDataToFirestore(); if (currentSession.userId === userId) { checkPendingNotifications(); showNotification('📬 ' + title, 'info'); } }
+    function checkPendingNotifications() { DB.notifications = DB.notifications || []; var unread = DB.notifications.filter(n => n.userId === currentSession.userId && !n.read).length; var bell = document.getElementById('notificationCount'); if (bell) { if (unread > 0) { bell.style.display = 'inline-block'; bell.textContent = unread; } else bell.style.display = 'none'; } }
+    function showPendingNotifications() { DB.notifications = DB.notifications || []; var notifs = DB.notifications.filter(n => n.userId === currentSession.userId).sort((a,b)=>new Date(b.timestamp)-new Date(a.timestamp)); var html = '<div style="max-height:400px; overflow-y:auto;">'; for(var n of notifs) { html += '<div class="item-card" style="'+(n.read?'opacity:0.6;':'')+'" onclick="viewNotification(\''+n.id+'\')"><div><strong>'+n.title+'</strong><br><small>'+new Date(n.timestamp).toLocaleString()+'</small><br>'+n.message+'</div>'+(n.actionData ? '<div><button class="btn-sm btn-approve">Open</button></div>' : '')+'</div>'; } html += '</div>'; openDrilldownModal('📬 Notifications', html); }
+    function viewNotification(notifId) { var notif = DB.notifications.find(n => n.id === notifId); if(notif) { notif.read = true; saveDataToLocal(); saveAllDataToFirestore(); if(notif.actionData) { if(notif.actionData.type === 'agreement') showAgreementForSigning(notif.actionData.agreementId, notif.actionData.role); } closeDrilldownModal(); } checkPendingNotifications(); }
+    function updateNotificationBell() { checkPendingNotifications(); }
+    
+    // ======================== STATEMENT GENERATOR ========================
+    function showStatementGenerator() {
+        var accounts = DB.savingsAccounts.filter(a => a.memberId === currentMember.id && a.status === 'active');
+        if (accounts.length === 0) { alert('No active savings accounts found.'); return; }
+        var today = new Date();
+        var threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(today.getMonth() - 3);
+        var html = '<div class="filter no-print" style="background:#1e293b;padding:15px;border-radius:12px;margin-bottom:15px;">';
+        html += '<select id="stmtAccountSelect" style="width:100%;padding:10px;margin-bottom:10px;background:#0f172a;border:1px solid #334155;color:white;border-radius:8px;">';
+        for (var i = 0; i < accounts.length; i++) {
+            html += '<option value="' + accounts[i].id + '">#' + accounts[i].id.slice(-6) + ' - ' + formatAmountWithCurrency(accounts[i].balance) + '</option>';
+        }
+        html += '</select>';
+        html += '<input type="date" id="fromDate" value="' + threeMonthsAgo.toISOString().split('T')[0] + '" style="width:100%;padding:10px;margin-bottom:10px;background:#0f172a;border:1px solid #334155;color:white;border-radius:8px;">';
+        html += '<input type="date" id="toDate" value="' + today.toISOString().split('T')[0] + '" style="width:100%;padding:10px;margin-bottom:10px;background:#0f172a;border:1px solid #334155;color:white;border-radius:8px;">';
+        html += '<button class="btn-save" onclick="generateBankStatement()" style="width:100%;padding:12px;">Generate Statement</button>';
+        html += '</div><div id="statementResult"></div>';
+        openDrilldownModal('📊 Bank Statement', html);
+    }
+    
+    function generateBankStatement() {
+        var accountId = document.getElementById('stmtAccountSelect').value;
+        var fromDate = new Date(document.getElementById('fromDate').value);
+        var toDate = new Date(document.getElementById('toDate').value);
+        toDate.setHours(23, 59, 59, 999);
+        var account = DB.savingsAccounts.find(a => a.id === accountId);
+        if (!account) return;
+        var allTransactions = DB.savingsTransactions.filter(t => t.savingsId === accountId);
+        var member = DB.members.find(m => m.id === account.memberId);
+        var filteredTransactions = allTransactions.filter(function(t) {
+            var txDate = new Date(t.dateTime || t.date);
+            return txDate >= fromDate && txDate <= toDate;
+        });
+        filteredTransactions.sort(function(a, b) { return new Date(a.dateTime || a.date) - new Date(b.dateTime || b.date); });
+        var openingBalance = 0;
+        var transactionsBefore = allTransactions.filter(function(t) {
+            var txDate = new Date(t.dateTime || t.date);
+            return txDate < fromDate;
+        });
+        for (var i = 0; i < transactionsBefore.length; i++) {
+            var t = transactionsBefore[i];
+            if (t.type === 'dep') openingBalance += t.amount;
+            else if (t.type === 'wd') openingBalance -= t.amount;
+        }
+        var closingBalance = openingBalance;
+        var totalCredit = 0;
+        var totalDebit = 0;
+        var rows = "";
+        for (var i = 0; i < filteredTransactions.length; i++) {
+            var t = filteredTransactions[i];
+            var txDate = new Date(t.dateTime || t.date);
+            var cr = "-", db = "-", bal = "-";
+            if (t.type === "dep") {
+                cr = formatAmount(t.amount);
+                totalCredit += t.amount;
+                closingBalance += t.amount;
+                bal = formatAmount(closingBalance);
+            } else if (t.type === "reg") {
+                db = formatAmount(t.amount);
+                totalDebit += t.amount;
+            }
+            rows += '<tr>';
+            rows += '<td>' + txDate.toLocaleDateString('en-GB') + '</td>';
+            rows += '<td>' + (t.description || t.type) + '</td>';
+            rows += '<td class="text-right">' + cr + '</td>';
+            rows += '<td class="text-right">' + db + '</td>';
+            rows += '<td class="text-right">' + bal + '</td>';
+            rows += '</table>';
+        }
+        var html = '<div class="stmt-box" id="printArea">';
+        html += '<div class="stmt-header">';
+        html += '<h2>' + DB.conf.name + '</h2>';
+        html += '<p>' + DB.conf.addr + '</p>';
+        html += '<h3>SAVINGS ACCOUNT STATEMENT</h3>';
+        html += '</div>';
+        html += '<div class="info">';
+        html += '<div><strong>Account:</strong><br>#' + account.id.slice(-6) + '</div>';
+        html += '<div><strong>Holder:</strong><br>' + (member ? member.name : account.memberName) + '</div>';
+        html += '<div><strong>Period:</strong><br>' + fromDate.toLocaleDateString('en-GB') + ' to ' + toDate.toLocaleDateString('en-GB') + '</div>';
+        html += '<div><strong>Opening:</strong><br>' + formatAmountWithCurrency(openingBalance) + '</div>';
+        html += '<div><strong>Closing:</strong><br>' + formatAmountWithCurrency(closingBalance) + '</div>';
+        html += '</div>';
+        if (filteredTransactions.length === 0) {
+            html += '<div style="text-align:center;padding:30px;">No transactions found</div>';
+        } else {
+            html += '<div class="table-wrapper">';
+            html += '<table class="statement-table">';
+            html += '<thead><tr><th>Date</th><th>Description</th><th>Credit (' + DB.conf.cur + ')</th><th>Debit (' + DB.conf.cur + ')</th><th>Balance (' + DB.conf.cur + ')</th></tr></thead>';
+            html += '<tbody>' + rows;
+            html += '<tr class="total-row"><td colspan="2"><strong>TOTAL</strong></td><td class="text-right"><strong>' + formatAmount(totalCredit) + '</strong></td><td class="text-right"><strong>' + formatAmount(totalDebit) + '</strong></td><td class="text-right"><strong>' + formatAmount(totalCredit - totalDebit) + '</strong></td></tr>';
+            html += '</tbody></table></div>';
+        }
+        html += '<div class="footer">This is a computer-generated statement.<br>Generated: ' + new Date().toLocaleString() + '</div>';
+        html += '</div>';
+        html += '<div class="no-print" style="margin-top:15px; text-align:center;"><button class="btn-print" onclick="window.print()">🖨️ PRINT STATEMENT</button></div>';
+        document.getElementById('statementResult').innerHTML = html;
+    }
+    
+    // ======================== INIT SYSTEM ========================
+    function initSystem() { 
+        loadDataFromLocal(); 
+        pendingPayments = JSON.parse(localStorage.getItem('SHG_PENDING_PAYMENTS')||'[]'); 
+        initFirebase(); 
+        var savedInterval = localStorage.getItem('BACKUP_INTERVAL'); 
+        if (savedInterval) { 
+            backupIntervalId = setInterval(function() { localStorage.setItem('AUTO_BACKUP', JSON.stringify({db:DB,pendingPayments,timestamp:new Date().toISOString()})); }, parseInt(savedInterval) * 60 * 60 * 1000); 
+        } 
+        document.getElementById('loginPanel').style.display = 'block'; 
+        document.getElementById('dashboardContainer').style.display = 'none'; 
+        setInterval(() => checkPendingNotifications(), 5000);
+    }
+
 
 
   
@@ -1925,164 +2705,6 @@
             document.getElementById('dashboardContainer').style.display = 'none'; 
             setInterval(() => checkPendingNotifications(), 5000);
         }
-        
-        // ======================== BLOCK-057: REAL-TIME SYNC (PURE ADDITION - NO MODIFICATIONS) ========================
-// This block adds real-time sync without changing any existing functions
-
-// Variable to prevent sync loops
-window.realtimeSyncActive = false;
-
-// PUSH: Send local changes to cloud automatically
-function realtimePushToCloud() {
-    if (!isFirebaseConnected || !dbRef) return;
-    if (window.realtimeSyncActive) return;
-    
-    window.realtimeSyncActive = true;
-    dbRef.update({ 
-        DB: DB, 
-        pendingPayments: pendingPayments, 
-        lastRealtimeSync: new Date().toISOString() 
-    }).catch(function(e) { console.error('Realtime push error:', e); });
-    
-    setTimeout(function() { window.realtimeSyncActive = false; }, 1000);
-}
-
-// PULL: Listen for cloud changes and update local
-function realtimeListenToCloud() {
-    if (!dbRef) return;
-    
-    dbRef.on('value', function(snapshot) {
-        if (!snapshot.exists()) return;
-        if (window.realtimeSyncActive) return;
-        
-        var cloudData = snapshot.val();
-        var needsRefresh = false;
-        
-        // Check if DB changed
-        if (cloudData.DB && JSON.stringify(DB) !== JSON.stringify(cloudData.DB)) {
-            DB = cloudData.DB;
-            if (!DB.companyAccounts) DB.companyAccounts = [];
-            if (!DB.loanAgreements) DB.loanAgreements = [];
-            if (!DB.notifications) DB.notifications = [];
-            needsRefresh = true;
-        }
-        
-        // Check if pending payments changed
-        if (cloudData.pendingPayments && JSON.stringify(pendingPayments) !== JSON.stringify(cloudData.pendingPayments)) {
-            pendingPayments = cloudData.pendingPayments;
-            needsRefresh = true;
-        }
-        
-        // Update local storage and refresh UI if needed
-        if (needsRefresh && currentSession && currentSession.loggedIn) {
-            try {
-                localStorage.setItem('SHG_PRO_DATA_V5', JSON.stringify(DB));
-                localStorage.setItem('SHG_PENDING_PAYMENTS', JSON.stringify(pendingPayments));
-            } catch(e) {}
-            loadDashboard();
-            showNotification('🔄 Real-time update received!', 'alert');
-        }
-        
-        // Update sync status display
-        if (document.getElementById('syncText')) {
-            document.getElementById('syncText').innerHTML = '☁️ Real-time ON';
-        }
-    });
-}
-
-// Hook into saveDataToLocal to trigger auto-push (preserve original function)
-if (typeof saveDataToLocal === 'function') {
-    var originalSaveDataToLocal = saveDataToLocal;
-    saveDataToLocal = function() {
-        originalSaveDataToLocal();
-        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
-            setTimeout(function() { realtimePushToCloud(); }, 200);
-        }
-    };
-}
-
-// Hook into approvePayment to trigger auto-push
-if (typeof approvePayment === 'function') {
-    var originalApprovePayment = approvePayment;
-    approvePayment = function(paymentId) {
-        originalApprovePayment(paymentId);
-        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
-            setTimeout(function() { realtimePushToCloud(); }, 200);
-        }
-    };
-}
-
-// Hook into rejectPayment
-if (typeof rejectPayment === 'function') {
-    var originalRejectPayment = rejectPayment;
-    rejectPayment = function(paymentId) {
-        originalRejectPayment(paymentId);
-        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
-            setTimeout(function() { realtimePushToCloud(); }, 200);
-        }
-    };
-}
-
-// Hook into submitLoanRequest
-if (typeof submitLoanRequest === 'function') {
-    var originalSubmitLoanRequest = submitLoanRequest;
-    submitLoanRequest = function() {
-        originalSubmitLoanRequest();
-        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
-            setTimeout(function() { realtimePushToCloud(); }, 200);
-        }
-    };
-}
-
-// Hook into registerNewMember
-if (typeof registerNewMember === 'function') {
-    var originalRegisterNewMember = registerNewMember;
-    registerNewMember = function() {
-        originalRegisterNewMember();
-        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
-            setTimeout(function() { realtimePushToCloud(); }, 200);
-        }
-    };
-}
-
-// Hook into registerNewLeader
-if (typeof registerNewLeader === 'function') {
-    var originalRegisterNewLeader = registerNewLeader;
-    registerNewLeader = function() {
-        originalRegisterNewLeader();
-        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
-            setTimeout(function() { realtimePushToCloud(); }, 200);
-        }
-    };
-}
-
-// Hook into openSavingsAccount
-if (typeof openSavingsAccount === 'function') {
-    var originalOpenSavingsAccount = openSavingsAccount;
-    openSavingsAccount = function() {
-        originalOpenSavingsAccount();
-        if (isFirebaseConnected && dbRef && !window.realtimeSyncActive && currentSession && currentSession.loggedIn) {
-            setTimeout(function() { realtimePushToCloud(); }, 200);
-        }
-    };
-}
-
-// Start real-time listener when Firebase is ready
-function startRealtimeSync() {
-    if (dbRef) {
-        realtimeListenToCloud();
-        if (document.getElementById('syncText')) {
-            document.getElementById('syncText').innerHTML = '☁️ Real-time ON';
-        }
-    } else {
-        setTimeout(startRealtimeSync, 1000);
-    }
-}
-
-// Initialize real-time sync after page loads
-setTimeout(startRealtimeSync, 3000);
-        
-        
     </script>
 </body>
 </html>
